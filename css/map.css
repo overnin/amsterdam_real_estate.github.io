@@ -17,14 +17,23 @@ h1 {
     flex-flow: row wrap;
 }
 
+
 .sub-container {
     padding-right: 1%;
     padding-left: 1%;
-    width: 48%;
+    width: 98%;
+}
+
+@media (min-width: 800px) {
+    .sub-container {
+        padding-right: 1%;
+        padding-left: 1%;
+        width: 48%;
+    }
 }
 
 .map {
-    height: 500px;
+    min-height: 500px;
 }
 
 .graphs {
@@ -33,7 +42,7 @@ h1 {
 }
 
 #map {
-	height: 80%;
+	height: 400px;
 	width: 100%;
 }
 
