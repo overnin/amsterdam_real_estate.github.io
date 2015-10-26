@@ -9,3 +9,9 @@ include all feedback you received from others on your visualization from the fir
 
 ==Resources==
 list any sources you consulted to create your visualization
+
+==Pre Process==
+ogr2ogr -f GeoJSON -clipsrc 4.728759 52.278172 5.079163 52.431065 places.json places.shp
+Oliviers-MacBook-Pro:netherlands-latest.shp olivier$ ogr2ogr -f GeoJSON -clipsrc 4.728759 52.278172 5.079163 52.431065 roads.json roads.shp
+Oliviers-MacBook-Pro:netherlands-latest.shp olivier$ ogr2ogr -f GeoJSON -clipsrc 4.728759 52.278172 5.079163 52.431065 railways.json railways.shp
+Oliviers-MacBook-Pro:netherlands-latest.shp olivier$ ogr2ogr -f GeoJSON -clipsrc 4.728759 52.278172 5.079163 52.431065 waterways.json waterways.shp

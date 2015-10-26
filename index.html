@@ -1,12 +1,44 @@
-<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
-<HTML>
-   <HEAD>
-      <TITLE>
-         A Small Hello 
-      </TITLE>
-   </HEAD>
-<BODY>
-   <H1>Hi</H1>
-   <P>This is very minimal "hello world" HTML document.</P> 
-</BODY>
-</HTML>
+<!DOCTYpE html>
+<html>
+   <head>
+      <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+      <meta charset="utf-8">
+      <title>
+         Amsterdam Real Estate Explorer 
+      </title>
+      <link rel="stylesheet" type="text/css" href="css/map.css">
+      <link rel="stylesheet" type="text/css" href="css/colorbrewer.css">
+
+      <script src="js/d3.js" charset="utf-8"></script>
+      <script src="js/colorbrewer.js" charset="utf-8"></script>
+      <script src="js/d3_box.js" charset="utf-8"></script>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
+      <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCc38fETNkItd8oK2uQXEv2JRv_oxZFyyQ&signed_in=true"></script>
+      <script src="js/label.js" type="text/javascript"></script>
+
+      <script src="js/real_estate_viz.js" type="text/javascript">></script>
+
+   </head>
+<body onload="realEstateViz.init()">
+    <h1>Amsterdam Real Estate Explorer</h1>
+    <div class='container'>
+      <div class='sub-container'>
+      <div class='map'>
+         <div id="map-legend">
+            <small>Price per square meter</small>
+          </div>
+        <div id="map"></div>
+        <div id="most-active" style="padding-top: 1.5em;"></div>
+      </div>
+      </div>
+      <div class='sub-container'>
+      <div class='graphs'>
+        <div id='price-graph' style='height:300px'> </div>
+        <div id='sold-graph' style='height:300px'> </div>
+        <div id='category-graph' style='height:350px'> </div>
+      </div>
+      </div>
+    </div>
+</body>
+</html>
