@@ -1,23 +1,50 @@
 var realEstateViz = (function (){
 
-  function init() {
-    d3.json('js/amsterdam_kriging.json', function(error, data) {
-      if (error) throw error;
-      initKrigingMap(data);
-    })
+  var all_data = {
+    'kriging': null,
+    'points': null,
+    'displayed_points': null,
+    'map_bounds': null}
 
-    d3.json('js/data_amsterdam.json', function(error, data) {
-      if (error) throw error;
-      //initMap(data);
-      initSoldGraph(data);
-      initPriceGraph(data);
-      initCategoryGraph(data);
-      initMostActiveAgency(data);
+  function init() {
+    queue()
+      .defer(d3.json, 'js/amsterdam_kriging.json')
+      .defer(d3.json, 'js/data_amsterdam.json')
+      .await(buildViz);
+  }
+
+  function buildViz(error, kriging, points) {
+    if (error) throw error;
+    all_data.points = points;
+    all_data.kriging = kriging;
+    preProcess();
+    initKrigingMap();
+    
+    all_data.watch('map_bounds', function(id, oldval, newval) {
+      all_data.displayed_points = all_data.points.filter(function(d) {
+        return newval.contains(d['pos'])})
+      //initSoldGraph(); 
+      initSoldBarChart();  
+      initPriceGraph();
+      return newval;
+    });
+    //initSoldGraph();
+    //initPriceGraph();
+    //initMostActiveAgency();
+  }
+
+  function preProcess() {
+    all_data.kriging.forEach(function(d) {
+      sw = new google.maps.LatLng(d.lat - 0.000625 , d.lng - 0.00125);
+      ne = new google.maps.LatLng(d.lat + 0.000625 , d.lng + 0.00125);
+      d['bounds'] = new google.maps.LatLngBounds(sw, ne);
+    });
+    all_data.points.forEach(function(d) {
+      d['pos'] = new google.maps.LatLng(d.lat, d.lng);
     });
   }
 
-  function initKrigingMap(data) {
-
+  function initKrigingMap() {
     var styles = [
     {
     stylers: [
@@ -50,80 +77,101 @@ var realEstateViz = (function (){
     }];
 
     var map = new google.maps.Map(document.getElementById('map'), {
-      zoom: 13,
+      zoom: 14,
       center: {lat: 52.37, lng: 4.9},
       mapTypeId: google.maps.MapTypeId.TERRAIN,
       zoomControl: true,
       mapTypeControl: false,
-      scaleControl: false,
+      scaleControl: true,
       streetViewControl: false,
       rotateControl: false,
       scrollwheel: false,
       styles: styles
     });
+    var rectangles = [];
+    var labels = [];
 
-    price_domain = d3.extent(data, function(elt) {
-      return elt['price_square_meter'];
-    });
+    /*data.forEach(function(d) {
+      sw = new google.maps.LatLng(d.lat - 0.000625 , d.lng - 0.00125);
+      ne = new google.maps.LatLng(d.lat + 0.000625 , d.lng + 0.00125);
+      d['bounds'] = new google.maps.LatLngBounds(sw, ne);
+    });*/
 
-    var colors = d3.scale.quantize()
-      .domain(price_domain)
-      .range(colorbrewer.YlOrRd[3]);
+    google.maps.event.addListener(map, 'idle', function(){
+      for (var i =0; i < rectangles.length; i++) {
+        rectangles[i].setMap(null);
+      }
+      rectangles = []
+      all_data.map_bounds = map.getBounds();
 
-    var legend = d3.select('#map-legend')
-      .append('ul')
-      .attr('class', 'list-inline');
+      viewed_data = all_data.kriging.filter(function(d) {
+        return all_data.map_bounds.intersects(d['bounds'])})
 
-    var keys = legend.selectAll('li.key')
-      .data(colors.range());
-
-    keys.enter().append('li')
-      .attr('class', 'key')
-      .style('border-top-color', String)
-      .text(function(d) {
-          var r = colors.invertExtent(d);
-          return r[0].toFixed(0);
+      price_domain = d3.extent(viewed_data, function(elt) {
+        return elt['price_square_meter'];
       });
 
-    for (var property in data) {
-      var spot = new google.maps.Rectangle({
-        strokeColor: colors(data[property].price_square_meter),
-        strokeOpacity: 0.2,
-        strokeWeight: 0,
-        fillColor: colors(data[property].price_square_meter),
-        fillOpacity: 0.4,
-        map: map,
-        center: {'lat': data[property].lat, 'lng': data[property].lng},
-        bounds: {
-          north: data[property].lat + 0.0025,
-          south: data[property].lat - 0.0025,
-          east: data[property].lng + 0.0025,
-          west: data[property].lng - 0.0025
-        },
-        data: data[property],
-        value: '€ ' + data[property]['price_square_meter'].toFixed(0) + ' m2',
-        zIndex: 0,
-      });
       
-      spot.addListener('mouseover', function() {
-        var label = new MapLabel({
-          text: this.value,
-          position: new google.maps.LatLng(this.center.lat, this.center.lng),
-          map: map,
-          fontSize: 10,
-          align: 'right'
+      var colors = d3.scale.quantize()
+        .domain(price_domain)
+        .range(colorbrewer.YlOrRd[3]);
+
+      var legend = d3.select('#map-legend')
+        .html("")
+        .append('ul')
+        .attr('class', 'list-inline');
+
+      var keys = legend.selectAll('li.key')
+        .data(colors.range());
+
+      keys.enter().append('li')
+        .attr('class', 'key')
+        .style('border-top-color', String)
+        .text(function(d) {
+            var r = colors.invertExtent(d);
+            return r[0].toFixed(0);
         });
-        this.label = label;
-      });
-      spot.addListener('mouseout', function() {
-        this.label.onRemove();
-      });
-      /*if (property > 100) {
-        return;
-      }*/
-    }
+
+      for (var property in viewed_data) {
+        item = viewed_data[property];
+        var spot = new google.maps.Rectangle({
+          strokeColor: colors(item.price_square_meter),
+          strokeOpacity: 0.2,
+          strokeWeight: 0,
+          fillColor: colors(item.price_square_meter),
+          fillOpacity: 0.4,
+          map: map,
+          center: {'lat': item.lat, 'lng': item.lng},
+          bounds: item.bounds,
+          data: item,
+          value: '€ ' + item['price_square_meter'].toFixed(0) + ' m2',
+          zIndex: 0,
+        });
+
+        rectangles.push(spot);
+
+        spot.addListener('mouseover', function() {
+          var label = new MapLabel({
+            text: this.value,
+            position: new google.maps.LatLng(this.center.lat, this.center.lng),
+            map: map,
+            fontSize: 16,
+            align: 'left'
+          });
+          labels.push(label);
+        });
+        spot.addListener('mouseout', function() {
+          for (var i = 0; i < labels.length; i++) {
+            labels[i].onRemove();
+          }
+          labels = []
+        });
+      }
+    });    
   }
 
+  //Deprecated, my be usefull to show not yet sold
+  /*
   function initMap(data) {
 
     var styles = [
@@ -223,10 +271,10 @@ var realEstateViz = (function (){
         return;
       }
     }
-  }
+  }*/
 
 
-  function initSoldGraph(data) {
+  function initSoldGraph() {
     var parseDate = d3.time.format("%Y-%m").parse;
 
     //prepare data
@@ -238,7 +286,7 @@ var realEstateViz = (function (){
         return d.sold_date.substring(0, 7); 
       })
       .sortKeys(d3.ascending)
-      .entries(data);
+      .entries(all_data.displayed_points);
 
     per_months.forEach(function(d) {
       d['date'] = parseDate(d.key)
@@ -248,7 +296,7 @@ var realEstateViz = (function (){
     var today = new Date();
     thisMonthIso = today.toISOString().substring(0, 7);
     per_months = per_months.filter(function(d) {
-      return (d.key != "NaN" && d.key <= thisMonthIso);
+      return (d.key != "NaN" && d.key < thisMonthIso);
     });
 
     //build graph
@@ -279,7 +327,7 @@ var realEstateViz = (function (){
         .y(function(d) { 
           return y(d.count); });
 
-    var svg = d3.select("#price-graph").append("svg")
+    var svg = d3.select("#sold-graph").html("").append("svg")
           .attr("width", '100%')
           .attr("height", '100%')
           .attr('viewBox','0 0 '+Math.min(width,height + margin.top + margin.bottom)+' '+Math.min(width,height + margin.top + margin.bottom))
@@ -312,7 +360,7 @@ var realEstateViz = (function (){
   }
 
 
-  function initPriceGraph(data) {
+  function initPriceGraph() {
 
     var margin = {top: 20, right: 30, bottom: 30, left: 50},
       width = d3.select("#price-graph").node().getBoundingClientRect().width,
@@ -343,7 +391,7 @@ var realEstateViz = (function (){
         .y(function(d) { 
           return y(d.median); });
 
-    var svg = d3.select("#price-graph").append("svg")
+    var svg = d3.select("#price-graph").html("").append("svg")
           .attr("width", '100%')
           .attr("height", '100%')
           .attr('viewBox','0 0 '+Math.min(width,height + margin.top + margin.bottom)+' '+Math.min(width,height + margin.top + margin.bottom))
@@ -359,7 +407,7 @@ var realEstateViz = (function (){
         return d.sold_date.substring(0, 7); 
       })
       .sortKeys(d3.ascending)
-      .entries(data);
+      .entries(all_data.displayed_points);
 
     per_months.forEach(function(d) {
       d['date'] = parseDate(d.key)
@@ -396,6 +444,8 @@ var realEstateViz = (function (){
         .attr("d", line);
   }
 
+  //Deprecated too complex
+  /*
   function initCategoryGraph(data) {    
     var margin = {top: 20, right: 30, bottom: 70, left: 50};
 
@@ -502,6 +552,143 @@ var realEstateViz = (function (){
       while (d[--j] > q3 + iqr);
       return [i, j];
     };
+  }
+  */
+
+  function initSoldBarChart() {
+    var margin = {top: 20, right: 30, bottom: 75, left: 50},
+      width = d3.select("#sold-graph").node().getBoundingClientRect().width,
+      height = d3.select("#sold-graph").node().getBoundingClientRect().height,
+      width = width - margin.left - margin.right,
+      height = height - margin.top - margin.bottom;
+
+    var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);  
+
+    var y = d3.scale.linear()
+        .rangeRound([height, 0]);
+
+    var color = d3.scale.ordinal()
+        .range(["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56"]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+        .tickFormat(d3.time.format("%Y-%m"))
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .tickFormat(d3.format(".2s"));
+
+    var svg = d3.select("#sold-graph").html("").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var parseDate = d3.time.format("%Y-%m").parse;
+
+    color.domain(['1', '2', '3', '4', '5']);
+
+    //prepare data
+    var per_months = d3.nest()
+      .key(function(d) { 
+        if (d.sold_date == null) {
+          return null;
+        } 
+        return d.sold_date.substring(0, 7); 
+      })
+      .sortKeys(d3.ascending)
+      /*.key(function(d) {
+        return d.rooms
+      })
+      .sortKeys(d3.ascending)*/
+      .entries(all_data.displayed_points);
+
+    per_months.forEach(function(d) {
+      var y0 = 0;
+      d.date = parseDate(d.key);
+      d.rooms = []
+      for (var i = 1; i<=4; i++) {
+        d.rooms[i] = d.values
+          .filter(function(r) {return r.rooms==i})
+          .length
+      }
+      d.rooms.push(d['values'].filter(function(r) {return 5 <= r.rooms;}).length)
+      d.rooms = color.domain().map(function(name) { 
+        return {
+          name: name, 
+          y0: y0, 
+          y1: y0 += +d.rooms[name]}; 
+      });
+      d.total = d.rooms[d.rooms.length - 1].y1;
+    });
+    
+    var today = new Date();
+    thisMonthIso = today.toISOString().substring(0, 7);
+    per_months = per_months.filter(function(d) {
+      return (d.key != "NaN" && d.key < thisMonthIso);
+    });
+
+    x.domain(per_months.map(function(d) { return d.date; }));
+    y.domain([0, d3.max(per_months, function(d) { return d.total; })]);
+
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis)
+      .selectAll("text")
+        .style("text-anchor", "end")
+        .attr("dx", "-.8em")
+        .attr("dy", "-.55em")
+        .attr("transform", "rotate(-90)" );
+
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+      .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text("# sold");
+
+    var date_bar = svg.selectAll(".date-bar")
+        .data(per_months)
+      .enter().append("g")
+        .attr("class", "g")
+        .attr("transform", function(d) { 
+          return "translate(" + x(d.date) + ",0)"; });
+
+    date_bar.selectAll("rect")
+        .data(function(d) { return d.rooms; })
+      .enter().append("rect")
+        .attr("width", x.rangeBand())
+        .attr("y", function(d) { 
+          return y(d.y1); })
+        .attr("height", function(d) { 
+          return y(d.y0) - y(d.y1); })
+        .style("fill", function(d) { 
+          return color(d.name); });
+
+    var legend = svg.selectAll(".legend")
+        .data(color.domain().slice().reverse())
+      .enter().append("g")
+        .attr("class", "legend")
+        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+    legend.append("rect")
+        .attr("x", width - 18)
+        .attr("width", 18)
+        .attr("height", 18)
+        .style("fill", color);
+
+    legend.append("text")
+        .attr("x", width - 24)
+        .attr("y", 9)
+        .attr("dy", ".35em")
+        .style("text-anchor", "end")
+        .text(function(d) { return d; });
   }
 
 
