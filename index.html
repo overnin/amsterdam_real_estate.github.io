@@ -25,22 +25,28 @@
 
    </head>
 <body onload="realEstateViz.init()">
-    <h1>Amsterdam Real Estate Explorer</h1>
+    <h2>Amsterdam Real Estate Explorer</h2>
+    <div style="padding-right:1%;padding-left:1%">
+    <p>The map below shows an average price per square meter in Amsterdam. By pointing on the parts of the map, a more detail agerage value appears. By zooming or navigating around the city, the scale adjusts to the visible part of the map: 3 zones are colored to identify the low, medium, high areas. As the map sets on an area, different statistics and graphs are compute to properties contained this visible part.</p>
+    </div>
     <div class='container'>
       <div class='sub-container'>
       <div class='map'>
-         <div id="map-legend">
-            <small>Price per square meter</small>
+         <div class="map-legend">
+              <small>Price per square meter on the map</small>            
+              <div id="map-legend"></div>
           </div>
         <div id="map"></div>
-        <div id="most-active" style="padding-top: 1.5em;"></div>
+        <h3>Currently the top 5 agencies with most properties on offer</h3>
+        <div id="most-active"></div>
       </div>
       </div>
       <div class='sub-container'>
       <div class='graphs'>
+        <h3>Evolution of the price per square meter</h3>
         <div id='price-graph' style='height:300px'> </div>
+        <h3>Number of property sold per number of rooms</h3>
         <div id='sold-graph' style='height:300px'> </div>
-        <div id='category-graph' style='height:350px'> </div>
       </div>
       </div>
     </div>

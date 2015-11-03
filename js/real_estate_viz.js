@@ -26,6 +26,7 @@ var realEstateViz = (function (){
       //initSoldGraph(); 
       initSoldBarChart();  
       initPriceGraph();
+      initMostActiveAgency();
       return newval;
     });
     //initSoldGraph();
@@ -692,7 +693,7 @@ var realEstateViz = (function (){
   }
 
 
-  function initMostActiveAgency(data) {
+  function initMostActiveAgency() {
     var per_agencys = d3.nest()
       .key(function(d) { 
         if (d.agency == '' || d.agency == null) {
@@ -700,28 +701,39 @@ var realEstateViz = (function (){
         } 
         return d.agency; 
       })
-      .entries(data);
+      .entries(all_data.displayed_points);
 
     per_agencys.forEach(function(d) {
+      d.values = d.values.filter(function(r) {
+        return (r.sold_date=="NaN" || r.sold_date==null);});
       d.values = d.values.length;
     });
     
     per_agencys = per_agencys.filter(function(d) {
-      return (d.key != "NaN" && d.key != null);
+      return (d.key != "NaN" && d.key != null && d.values > 0);
     });
 
     per_agencys = per_agencys.sort(function(a, b){ 
       return d3.descending(a.values, b.values); 
     });
 
-    d3.select('#most-active').append('div')
-      .text("Most selling agencies")
-
-    per_agencys.forEach(function(d){
+    d3.select('#most-active').html("")
+    if (per_agencys.length == 0) {
       d3.select('#most-active').append('div')
-        .attr("style","background-color:#fec44f; margin-bottom:1px;")
-        .text(d.key + ' - ' +d.values);
-
+      .text("Sorry, none of the agencies are currently selling here.")
+    }
+    var visible = 0;
+    per_agencys.forEach(function(d){
+      if (visible < 10) {
+        d3.select('#most-active').append('div')
+          .attr("style","background-color:#fec44f; margin-bottom:1px;")
+          .text(d.key + ' has ' +d.values+ ' offers.');
+      } else {
+        d3.select('#most-active').append('div')
+          .attr("style","background-color:#fec44f; margin-bottom:1px;display:none")
+          .text(d.key + ' has ' +d.values+ ' offers.');
+      }
+      visible++;
     })
   }
 

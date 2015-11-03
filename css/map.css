@@ -5,7 +5,7 @@ html, body {
     font-family: helvetica;
 }
 
-h1 {
+h2 {
 	text-align: center;
 	margin-bottom: 0px;
 }
@@ -46,14 +46,14 @@ h1 {
 	width: 100%;
 }
 
-#map-legend {
-    padding: 1.5em 0 0 1.5em;
+.map-legend {
+    padding: 0 0 0 1.5em;
 }
 
 #map-legend .list-inline {
 	margin-top: 0;
 	padding-left: 0;
-    list-style: none;
+  list-style: none;
 }
 
 .list-inline>li {
