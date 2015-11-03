@@ -1,14 +1,127 @@
 var realEstateViz = (function (){
 
   function init() {
+    d3.json('js/amsterdam_kriging.json', function(error, data) {
+      if (error) throw error;
+      initKrigingMap(data);
+    })
+
     d3.json('js/data_amsterdam.json', function(error, data) {
       if (error) throw error;
-      initMap(data);
+      //initMap(data);
       initSoldGraph(data);
       initPriceGraph(data);
       initCategoryGraph(data);
       initMostActiveAgency(data);
     });
+  }
+
+  function initKrigingMap(data) {
+
+    var styles = [
+    {
+    stylers: [
+        { saturation: -30 }
+      ]
+    },{
+      featureType: "road",
+      elementType: "geometry",
+      stylers: [
+        { lightness: 100 },
+        { visibility: "simplified" }
+      ]
+    },{
+      featureType: "road",
+      elementType: "labels",
+      stylers: [
+        { visibility: "off" }
+      ]
+    },{ 
+      featureType: "all",
+      elementType: "labels",
+      stylers: [
+        {lightness: 40}]
+    },{
+      featureType: "poi",
+      elementType: "labels",
+      stylers: [
+        {visibility: "off"}
+      ]
+    }];
+
+    var map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 13,
+      center: {lat: 52.37, lng: 4.9},
+      mapTypeId: google.maps.MapTypeId.TERRAIN,
+      zoomControl: true,
+      mapTypeControl: false,
+      scaleControl: false,
+      streetViewControl: false,
+      rotateControl: false,
+      scrollwheel: false,
+      styles: styles
+    });
+
+    price_domain = d3.extent(data, function(elt) {
+      return elt['price_square_meter'];
+    });
+
+    var colors = d3.scale.quantize()
+      .domain(price_domain)
+      .range(colorbrewer.YlOrRd[3]);
+
+    var legend = d3.select('#map-legend')
+      .append('ul')
+      .attr('class', 'list-inline');
+
+    var keys = legend.selectAll('li.key')
+      .data(colors.range());
+
+    keys.enter().append('li')
+      .attr('class', 'key')
+      .style('border-top-color', String)
+      .text(function(d) {
+          var r = colors.invertExtent(d);
+          return r[0].toFixed(0);
+      });
+
+    for (var property in data) {
+      var spot = new google.maps.Rectangle({
+        strokeColor: colors(data[property].price_square_meter),
+        strokeOpacity: 0.2,
+        strokeWeight: 0,
+        fillColor: colors(data[property].price_square_meter),
+        fillOpacity: 0.4,
+        map: map,
+        center: {'lat': data[property].lat, 'lng': data[property].lng},
+        bounds: {
+          north: data[property].lat + 0.0025,
+          south: data[property].lat - 0.0025,
+          east: data[property].lng + 0.0025,
+          west: data[property].lng - 0.0025
+        },
+        data: data[property],
+        value: '€ ' + data[property]['price_square_meter'].toFixed(0) + ' m2',
+        zIndex: 0,
+      });
+      
+      spot.addListener('mouseover', function() {
+        var label = new MapLabel({
+          text: this.value,
+          position: new google.maps.LatLng(this.center.lat, this.center.lng),
+          map: map,
+          fontSize: 10,
+          align: 'right'
+        });
+        this.label = label;
+      });
+      spot.addListener('mouseout', function() {
+        this.label.onRemove();
+      });
+      /*if (property > 100) {
+        return;
+      }*/
+    }
   }
 
   function initMap(data) {
@@ -53,6 +166,7 @@ var realEstateViz = (function (){
       scaleControl: false,
       streetViewControl: false,
       rotateControl: false,
+      scrollwheel: false,
       styles: styles
     });
 
@@ -105,7 +219,7 @@ var realEstateViz = (function (){
       spot.addListener('mouseout', function() {
         this.label.onRemove();
       });
-      if (property > 7000) {
+      if (property > 100) {
         return;
       }
     }
@@ -113,21 +227,43 @@ var realEstateViz = (function (){
 
 
   function initSoldGraph(data) {
+    var parseDate = d3.time.format("%Y-%m").parse;
 
+    //prepare data
+    var per_months = d3.nest()
+      .key(function(d) { 
+        if (d.sold_date == null) {
+          return null;
+        } 
+        return d.sold_date.substring(0, 7); 
+      })
+      .sortKeys(d3.ascending)
+      .entries(data);
+
+    per_months.forEach(function(d) {
+      d['date'] = parseDate(d.key)
+      d['count'] = d.values.length;
+    });
+    
+    var today = new Date();
+    thisMonthIso = today.toISOString().substring(0, 7);
+    per_months = per_months.filter(function(d) {
+      return (d.key != "NaN" && d.key <= thisMonthIso);
+    });
+
+    //build graph
     var margin = {top: 20, right: 30, bottom: 30, left: 50},
       width = d3.select("#sold-graph").node().getBoundingClientRect().width,
       height = d3.select("#sold-graph").node().getBoundingClientRect().height,
       width = width - margin.left - margin.right,
       height = height - margin.top - margin.bottom;
 
-    var parseDate = d3.time.format("%Y-%m").parse;
-
     var x = d3.time.scale()
         .range([0, width]);
 
     var y = d3.scale.linear()
         .range([height, 0]);
-
+        
     var xAxis = d3.svg.axis()
         .scale(x)
         .orient("bottom")
@@ -151,29 +287,8 @@ var realEstateViz = (function (){
           .append("g")
           .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var per_months = d3.nest()
-      .key(function(d) { 
-        if (d.sold_date == null) {
-          return null;
-        } 
-        return d.sold_date.substring(0, 7); 
-      })
-      .sortKeys(d3.ascending)
-      .entries(data);
-
-    per_months.forEach(function(d) {
-      d['date'] = parseDate(d.key)
-      d['count'] = d.values.length;
-    });
-    
-    var today = new Date();
-    thisMonthIso = today.toISOString().substring(0, 7);
-    per_months = per_months.filter(function(d) {
-      return (d.key != "NaN" && d.key <= thisMonthIso);
-    });
-
     x.domain(d3.extent(per_months, function(d) { return d.date; }));
-    y.domain(d3.extent(per_months, function(d) { return d.count; }));
+    y.domain([0, d3.max(per_months, function(d) { return d.count; })]);
 
     svg.append("g")
         .attr("class", "x axis")
@@ -258,7 +373,7 @@ var realEstateViz = (function (){
     });
 
     x.domain(d3.extent(per_months, function(d) { return d.date; }));
-    y.domain(d3.extent(per_months, function(d) { return d.median; }));
+    y.domain([0, d3.max(per_months, function(d) { return d.median; })]);
 
     svg.append("g")
         .attr("class", "x axis")
