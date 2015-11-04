@@ -105,10 +105,10 @@ var realEstateViz = (function (){
       rectangles = []
       all_data.map_bounds = map.getBounds();
 
-      viewed_data = all_data.kriging.filter(function(d) {
+      displayed_zone = all_data.kriging.filter(function(d) {
         return all_data.map_bounds.intersects(d['bounds'])})
 
-      price_domain = d3.extent(viewed_data, function(elt) {
+      price_domain = d3.extent(displayed_zone, function(elt) {
         return elt['price_square_meter'];
       });
 
@@ -133,8 +133,8 @@ var realEstateViz = (function (){
             return r[0].toFixed(0);
         });
 
-      for (var property in viewed_data) {
-        item = viewed_data[property];
+      for (var area in displayed_zone) {
+        item = displayed_zone[area];
         var spot = new google.maps.Rectangle({
           strokeColor: colors(item.price_square_meter),
           strokeOpacity: 0.2,
@@ -166,6 +166,41 @@ var realEstateViz = (function (){
             labels[i].onRemove();
           }
           labels = []
+        });
+      }
+
+      displayed_points = all_data.points.filter(function(d) {
+        return all_data.map_bounds.contains(d['pos'])})
+        .filter(function(r) {return (r.sold_date=="NaN" || r.sold_date==null);});
+
+      d3.select("#property-for-sale-counter").html("").append("div")
+        .text(displayed_points.length + " for sale");
+
+      for (var index in displayed_points) {
+        item = displayed_points[index];
+        var spot = new google.maps.Circle({
+          strokeColor: colors(item.price_square_meter),
+          strokeOpacity: 1,
+          strokeWeight: 1,
+          fillColor: colors(item.price_square_meter),
+          fillOpacity: 1,
+          map: map,
+          center: {'lat': item.lat, 'lng': item.lng},
+          radius: 30,
+          data: item,
+          value: '€ ' + item['price_square_meter'] + 'm2',
+          zIndex: 0,
+        });
+        spot.addListener('mouseover', function() {
+           var label = new Label({
+              map: map,
+            });
+          label.bindTo('position', this, 'center');
+          label.bindTo('text', this, 'value');
+          this.label = label; 
+        });
+        spot.addListener('mouseout', function() {
+          this.label.onRemove();
         });
       }
     });    
@@ -242,19 +277,19 @@ var realEstateViz = (function (){
           return r[0];
       });
 
-    for (var property in data) {
+    for (var area in data) {
       var spot = new google.maps.Circle({
-        strokeColor: colors(data[property].price_square_meter),
+        strokeColor: colors(data[area].price_square_meter),
         strokeOpacity: 1,
         strokeWeight: 1,
-        fillColor: colors(data[property].price_square_meter),
+        fillColor: colors(data[area].price_square_meter),
         fillOpacity: 1,
         map: map,
-        center: {'lat': data[property].lat, 'lng': data[property].lng},
+        center: {'lat': data[area].lat, 'lng': data[area].lng},
         radius: 30,
         title: 'this is it',
-        data: data[property],
-        value: '€ ' + data[property]['price_square_meter'] + 'm2',
+        data: data[area],
+        value: '€ ' + data[area]['price_square_meter'] + 'm2',
         zIndex: 0,
       });
       spot.addListener('mouseover', function() {
@@ -268,7 +303,7 @@ var realEstateViz = (function (){
       spot.addListener('mouseout', function() {
         this.label.onRemove();
       });
-      if (property > 100) {
+      if (area > 100) {
         return;
       }
     }
