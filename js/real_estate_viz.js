@@ -627,7 +627,7 @@ var realEstateViz = (function (){
 
     var parseDate = d3.time.format("%Y-%m").parse;
 
-    color.domain(['1', '2', '3', '4', '5']);
+    color.domain(['1', '2', '3', '4', '5+']);
 
     //prepare data
     var per_months = d3.nest()
@@ -653,7 +653,7 @@ var realEstateViz = (function (){
           .filter(function(r) {return r.rooms==i})
           .length
       }
-      d.rooms.push(d['values'].filter(function(r) {return 5 <= r.rooms;}).length)
+      d.rooms['5+'] = d['values'].filter(function(r) {return 5 <= r.rooms;}).length;
       d.rooms = color.domain().map(function(name) { 
         return {
           name: name, 
@@ -679,8 +679,8 @@ var realEstateViz = (function (){
       .selectAll("text")
         .style("text-anchor", "end")
         .attr("dx", "-.8em")
-        .attr("dy", "-.55em")
-        .attr("transform", "rotate(-90)" );
+        .attr("dy", "-.01em")
+        .attr("transform", "rotate(-60)" );
 
     svg.append("g")
         .attr("class", "y axis")
