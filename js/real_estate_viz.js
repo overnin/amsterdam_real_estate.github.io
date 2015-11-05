@@ -90,7 +90,9 @@ var realEstateViz = (function (){
       styles: styles
     });
     var rectangles = [];
-    var labels = [];
+    var labels = {
+      'property': null,
+      'area': null};
 
     /*data.forEach(function(d) {
       sw = new google.maps.LatLng(d.lat - 0.000625 , d.lng - 0.00125);
@@ -159,13 +161,14 @@ var realEstateViz = (function (){
             fontSize: 16,
             align: 'left'
           });
-          labels.push(label);
+          if (labels.area != null) {
+            labels.area.onRemove();  
+          }
+          labels.area = label;
         });
         spot.addListener('mouseout', function() {
-          for (var i = 0; i < labels.length; i++) {
-            labels[i].onRemove();
-          }
-          labels = []
+          labels.area.onRemove();
+          labels.area = null
         });
       }
 
@@ -197,10 +200,10 @@ var realEstateViz = (function (){
             });
           label.bindTo('position', this, 'center');
           label.bindTo('text', this, 'value');
-          this.label = label; 
+          labels.property = label; 
         });
         spot.addListener('mouseout', function() {
-          this.label.onRemove();
+          labels.property.onRemove();
         });
       }
     });    
@@ -762,11 +765,11 @@ var realEstateViz = (function (){
       if (visible < 10) {
         d3.select('#most-active').append('div')
           .attr("style","background-color:#fec44f; margin-bottom:1px;")
-          .text(d.key + ' has ' +d.values+ ' offers.');
+          .text(d.key + ' has ' +d.values);
       } else {
         d3.select('#most-active').append('div')
           .attr("style","background-color:#fec44f; margin-bottom:1px;display:none")
-          .text(d.key + ' has ' +d.values+ ' offers.');
+          .text(d.key + ' has ' +d.values);
       }
       visible++;
     })
