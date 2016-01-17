@@ -9,7 +9,7 @@ var realEstateViz = (function (){
   function init() {
     queue()
       .defer(d3.json, 'js/amsterdam_kriging.json')
-      .defer(d3.json, 'js/data_amsterdam.json')
+      .defer(d3.json, 'js/amsterdam_properties.json')
       .await(buildViz);
   }
 
