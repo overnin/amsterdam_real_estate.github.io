@@ -152,7 +152,7 @@ var realEstateViz = (function (){
         });
 
         rectangles.push(spot);
-
+        /*
         spot.addListener('mouseover', function() {
           var label = new MapLabel({
             text: this.value,
@@ -170,6 +170,7 @@ var realEstateViz = (function (){
           labels.area.onRemove();
           labels.area = null
         });
+        */
       }
 
       displayed_points = all_data.points.filter(function(d) {
