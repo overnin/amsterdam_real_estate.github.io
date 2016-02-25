@@ -63,7 +63,7 @@ list any sources you consulted to create your visualization
 2) http://bl.ocks.org/ for all types of graphs (line, boxplot, bar chart, ...)
 3) various JS tricks online, see in each file for detailed references: object-watch.js, maplabel-compiled.js, label.js
 4) openstreetdata for initial attempt to build a map in d3 (abandoned due to difficulties in using low level geoData)
-
+5) amsterdam district areas  http://maps.amsterdam.nl/open_geodata/
 
 ==TODO==
 3) About the show the Kriging evolution

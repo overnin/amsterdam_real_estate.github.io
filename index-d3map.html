@@ -1,0 +1,236 @@
+<!DOCTYpE html>
+<meta charset="utf-8">
+<html>
+   <head>
+      <title>
+         Amsterdam Real Estate Explorer 
+      </title>
+      <link rel="stylesheet" type="text/css" href="css/map.css">
+      <!-- D3 -->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+      <script src="http://d3js.org/queue.v1.min.js"></script>
+      <!--Leaflet / Mapbox -->
+      <script src='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
+      <link href='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.css' rel='stylesheet' />
+
+   </head>
+<body>
+   <span id='sidebar' style='width:20%'>
+       <h3 style='display:inline'>Amsterdam</h3>
+       <p id="month" style='display:inline'> </p>
+   </span>
+   <span id='map' style="float:right;width:80%;height:100%"></span>
+   <script>
+    var width = 1440,
+    height = 800;
+
+    var center_lng = 4.9,
+    center_lat = 52.36,
+    month_index = 0;
+
+
+    queue()
+      .defer(d3.json, 'json/amsterdam_admin_level_3_adjusted_centroid.json')
+      .defer(d3.json, 'json/amsterdam_admin_level_3_aggregate.json')
+      .await(buildViz);
+
+    function buildViz(error, areas, aggregates) {
+        if (error) return console.error(error);
+
+        L.mapbox.accessToken = 'pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw';
+        var map = L.mapbox.map('map', 'mapbox.streets')
+              .setView([center_lat, center_lng], 12);
+        
+        //map.featureLayer.setGeoJSON(areas);
+
+        //data preprocess to be done in python
+        areas.features.forEach(function(area) {
+          i = aggregates.findIndex(function(aggregate) {
+            return aggregate.name == area.properties.Gebied;
+          });
+          aggregates[i].representative_point = area.properties.representative_point;
+        });
+
+        aggregates.forEach(function(d) {
+          d.LatLng = new L.LatLng(d.representative_point.coordinates[1], d.representative_point.coordinates[0]);
+        });
+        /*
+        aggregates.forEach(function(d) { 
+          //map.addLayer(L.circle([d.representative_point.coordinates[1], d.representative_point.coordinates[0]], 10));
+        });*/
+
+        var svg = d3.select(map.getPanes().overlayPane).append("svg")
+            .attr("class", "leaflet-zoom-animated")
+            .attr("width", window.innerWidth)
+            .attr("height", window.innerHeight + 200);
+
+        // Append <g> to svg
+        var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+      
+         var path = d3.geo.path()
+           .projection(function(d) {
+               d.LatLng = new L.LatLng(d[1], d[0]);
+               return [map.latLngToLayerPoint(d.LatLng).x, map.latLngToLayerPoint(d.LatLng).y];
+            });
+
+        var paths = g.selectAll("path")
+          .data(areas.features)
+          .enter()
+          .append("path")
+          .attr("d", path)
+          .attr("fill", "none")
+          .attr("stroke-width", "3")
+
+        // Append <circle> to <g>
+        var areas = g.selectAll(".area")
+            .data(aggregates, function(d) { return d['name']})
+            .enter()
+            .append("g")
+
+        var circles = areas
+            .append("circle")
+            .style("fill", "#fdbb84")
+            .style("stroke", "grey")
+            .style("stroke-width", "1")
+            .style("opacity", ".8")
+       /*
+        var boxes = areas
+            .append("rect")
+            .style('fill', 'white')
+            .attr('height', "100")
+            .attr('width', "100")
+
+
+        var details = areas
+            .append('text')
+            .html('this is it');
+        */
+        /*
+        var tooltip = g
+          .append("g")
+          .attr("class", 'tooltip')
+          .style("position", "absolute")
+          .style("visibility", "hidden");
+
+        tooltip
+          .append("rect")
+          .attr('height', "100")
+          .attr('width', "100")
+          .style('fill', 'white')
+
+        tooltip
+          .append("text")
+          .html("a simple tooltip");
+        */
+
+        circles.on("mouseenter", function (d){
+              //tooltip.style("visibility", "visible");
+              paths.filter(function(area) {
+                  return d['name'] == area.properties.Gebied;})
+                .attr("stroke", "grey");
+              return d3.select(this).style("opacity", "1");
+            })
+            .on("mousemove", function(d){
+              return 
+              /*return tooltip
+              .attr("x", (map.latLngToLayerPoint(d.LatLng).x + 10))
+              .attr("y", (map.latLngToLayerPoint(d.LatLng).y +10));*/
+            })
+            .on("mouseleave", function (d){
+              //tooltip.style("visibility", "hidden");
+              paths.filter(function(area) {
+                  return d['name'] == area.properties.Gebied;})
+                .attr("stroke", "none");
+              return d3.select(this).style("opacity", ".8");
+            });
+            //.attr("r", function(d) {return d.sold_per_month['2014-10']})
+
+        function get_radius(d) { 
+           return 0.001* Math.sqrt(d.sold_per_month[month_index].percent) * Math.pow(2, map.getZoom());
+         }
+
+        function update(e) {
+            translateSVG();
+            paths.attr('d', path)
+            areas.attr('transform', function(d) {
+              return 'translate('+map.latLngToLayerPoint(d.LatLng).x +' '+map.latLngToLayerPoint(d.LatLng).y +')'})
+            circles.attr("cx", 0)
+            //boxes.attr('x', 20)
+            //details.attr('transform', 'translate( 20 20)')
+            circles.attr("cy", 0)
+            //boxes.attr('y', 0)
+            circles.attr("r", get_radius);
+        }
+
+        function update_month() {
+            circles.transition()
+              .duration(100)
+              .attr("r", get_radius);
+        }
+
+        function translateSVG() {
+            var viewBoxLeft = document.querySelector("svg.leaflet-zoom-animated").viewBox.animVal.x;
+            var viewBoxTop = document.querySelector("svg.leaflet-zoom-animated").viewBox.animVal.y;
+            // Reszing width and height incase of window resize
+            svg.attr("width", window.innerWidth)
+            svg.attr("height", window.innerHeight +200)
+            // Adding the ViewBox attribute to our SVG to contain it
+            svg.attr("viewBox", function () {
+                return "" + viewBoxLeft + " " + (viewBoxTop) + " "  + window.innerWidth + " " + (window.innerHeight + 200);
+            });
+            // Adding the style attribute to our SVG to transkate it
+            svg.attr("style", function () {
+                return "transform: translate3d(" + viewBoxLeft + "px, " + viewBoxTop + "px, 0px);";
+            });
+        }
+
+        map.on("moveend", update);
+        update();
+
+        var id = setInterval(function() {
+          if (month_index >= aggregates[0].sold_per_month.length - 1) {
+            clearInterval(id);
+            return;
+          }
+          month_index++;
+          d3.select('#month').text(aggregates[0].sold_per_month[month_index].month);
+          update_month();
+        }, 1000);
+      };
+    /*      
+    var svg = d3.select(map.getPanes().overlayPane).append("svg")
+       .attr("class", "leaflet-zoom-animated")
+       .attr("width", window.innerWidth)
+       .attr("height", window.innerHeight);
+
+    // Append <g> to svg
+    var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+    */
+   /*
+    var svg = d3.select("#map").append("svg")
+        .attr("width", width)
+        .attr("height", height);
+   
+	  var projection = d3.geo.mercator()
+		  .center([4.9, 52.36])
+	    .scale(650000)
+	    .translate([width / 2, height / 2 -95]);
+
+	  var path = d3.geo.path()
+	    .projection(projection);
+
+    d3.json("json/amsterdam_admin_level_3.topo.json", function(error, amsterdam) {
+        if (error) return console.error(error);
+
+        var admin	= topojson.feature(amsterdam, amsterdam.objects.amsterdam_admin_level_3);
+
+        g.append("path")
+          .datum(admin)
+          .attr("d", path)
+          .attr("fill", "none")
+          .attr("stroke", "black")
+  
+    });*/
+      </script>
+</body>
+</html>
