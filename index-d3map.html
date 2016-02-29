@@ -7,12 +7,19 @@
       </title>
       <link rel="stylesheet" type="text/css" href="css/map.css">
       <!-- D3 -->
+      <!--
       <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
       <script src="http://d3js.org/queue.v1.min.js"></script>
-      <!--Leaflet / Mapbox -->
+      -->
+      <script src="js/d3.js" charset="utf-8"></script>
+      <script src="js/queue.v1.min.js"></script>
+      <!--Leaflet / Mapbox 
       <script src='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
-      <link href='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.css' rel='stylesheet' />
-
+      <link href='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.class' rel='stylesheet' />
+      -->
+      <script src='js/mapbox.js'></script>
+      <link href='css/mapbox.class' rel='stylesheet' />
+      
    </head>
 <body>
    <span id='sidebar' style='width:20%'>
@@ -26,7 +33,24 @@
 
     var center_lng = 4.9,
     center_lat = 52.36,
-    month_index = 0;
+    month_index = 6;
+
+    NL = d3.locale(
+      {
+        "decimal": ",",
+        "thousands": ".",
+        "grouping": [3],
+        "currency": ["€", ""],
+        "dateTime": "%a %b %e %X %Y",
+        "date": "%m/%d/%Y",
+        "time": "%H:%M:%S",
+        "periods": ["AM", "PM"],
+        "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        "shortDays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        "shortMonths": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+      }
+      );
 
 
     queue()
@@ -60,39 +84,98 @@
         });*/
 
         var svg = d3.select(map.getPanes().overlayPane).append("svg")
-            .attr("class", "leaflet-zoom-animated")
-            .attr("width", window.innerWidth)
-            .attr("height", window.innerHeight + 200);
+            .style("position", "relative")
+            //.attr("class", "leaflet-zoom-animated")
+            //.attr("width", window.innerWidth)
+            //.attr("height", window.innerHeight);
 
         // Append <g> to svg
-        var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+        var g = svg
+          .append("g")
+          .attr("class", "leaflet-zoom-hide");
       
+        /*
          var path = d3.geo.path()
            .projection(function(d) {
                d.LatLng = new L.LatLng(d[1], d[0]);
                return [map.latLngToLayerPoint(d.LatLng).x, map.latLngToLayerPoint(d.LatLng).y];
             });
+        */
+        function projectPoint(x, y) {
+           var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+           this.stream.point(point.x, point.y);
+        }
+
+        var transform = d3.geo.transform({point: projectPoint}),
+        path = d3.geo.path().projection(transform);
 
         var paths = g.selectAll("path")
           .data(areas.features)
           .enter()
           .append("path")
-          .attr("d", path)
           .attr("fill", "none")
           .attr("stroke-width", "3")
 
-        // Append <circle> to <g>
-        var areas = g.selectAll(".area")
+                  // Append <circle> to <g>
+        var area_containers = g.selectAll(".area")
             .data(aggregates, function(d) { return d['name']})
             .enter()
             .append("g")
 
-        var circles = areas
+        var circles = area_containers
+            //g.selectAll("circle")
+            //.data(aggregates)
+            //.enter()
             .append("circle")
             .style("fill", "#fdbb84")
             .style("stroke", "grey")
             .style("stroke-width", "1")
             .style("opacity", ".8")
+
+        var details = area_containers
+            .append("g")
+            .style('opacity', '0')
+            .style('visibility', 'hidden')
+            .style('pointer-event', 'none')
+            .attr("transform", "translate(10, 0)");
+
+        var boxes = details
+            .append("rect")
+            .style('fill', 'white')
+            .attr('x', '0')
+            .attr('y', '-10')
+            .attr('height', "100")
+            .attr('width', "200")
+
+        var texts = details
+            .append('text')
+            .attr('x', '5')
+            .attr('y', '5')
+
+         map.on("viewreset", reset);
+         reset();
+         
+         function reset() {
+            var bounds = path.bounds(areas),
+                topLeft = bounds[0],
+                bottomRight = bounds[1];
+
+            svg.attr("width", bottomRight[0] - topLeft[0])
+               .attr("height", bottomRight[1] - topLeft[1])
+               .style("left", topLeft[0] + "px")
+               .style("top", topLeft[1] + "px");
+
+            g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
+
+            paths.attr("d", path)
+            area_containers.attr('transform', function(d) {
+              return 'translate('+map.latLngToLayerPoint(d.LatLng).x +' '+map.latLngToLayerPoint(d.LatLng).y +')'})
+            //circles.attr("cx", function(d) { return map.latLngToLayerPoint(d.LatLng).x; })
+            //circles.attr("cy", function(d) { return map.latLngToLayerPoint(d.LatLng).y;} )
+            circles.attr("r", get_radius);
+            texts.html(get_text);
+        }
+
        /*
         var boxes = areas
             .append("rect")
@@ -124,7 +207,12 @@
         */
 
         circles.on("mouseenter", function (d){
-              //tooltip.style("visibility", "visible");
+              d3.select(this.nextSibling)
+                .style('visibility', 'visible')
+                .transition()
+                .delay(100)
+                .duration(400)
+                .style('opacity', '.9')
               paths.filter(function(area) {
                   return d['name'] == area.properties.Gebied;})
                 .attr("stroke", "grey");
@@ -137,7 +225,12 @@
               .attr("y", (map.latLngToLayerPoint(d.LatLng).y +10));*/
             })
             .on("mouseleave", function (d){
-              //tooltip.style("visibility", "hidden");
+              d3.select(this.nextSibling)
+                .transition()
+                .delay(100)
+                .duration(200)
+                .style("opacity", "0")
+                .style('visibility', 'hidden');
               paths.filter(function(area) {
                   return d['name'] == area.properties.Gebied;})
                 .attr("stroke", "none");
@@ -146,13 +239,43 @@
             //.attr("r", function(d) {return d.sold_per_month['2014-10']})
 
         function get_radius(d) { 
-           return 0.001* Math.sqrt(d.sold_per_month[month_index].percent) * Math.pow(2, map.getZoom());
+           return 0.001* Math.sqrt(d.stats_per_month[month_index].sold_percent * 100) * Math.pow(2, map.getZoom());
+         }
+
+         function get_text(d) {
+            detail = '<tspan x="3">' +d['name']+ '</tspan>'
+            detail += '<tspan x="3" y="1.5em">' + NL.numberFormat("$f")(d.stats_per_month[month_index].price_square_meter_mean) + ' m2</tspan>';
+            percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean)
+            if (percent > 0) {
+              color = 'green';
+            } else {
+              color = 'red';
+            }
+            detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
+
+            detail += '<tspan x="3" y="3.5em">' + d.stats_per_month[month_index].sold_count + ' of sold</tspan>';
+            percent = precentage_increase(d.stats_per_month[month_index-4].sold_percent, d.stats_per_month[month_index].sold_percent)
+            if (percent > 0) {
+              color = 'green';
+            } else {
+              color = 'red';
+            }
+            detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
+            return detail;
+         }
+
+         function round_2decimal(a) {
+          return Math.round(100 * a) / 100;
+         }
+         
+         function precentage_increase(a, b) {
+          return ((b-a) / a)
          }
 
         function update(e) {
-            translateSVG();
-            paths.attr('d', path)
-            areas.attr('transform', function(d) {
+            //translateSVG();
+            //paths.attr('d', path)
+            areasbox.attr('transform', function(d) {
               return 'translate('+map.latLngToLayerPoint(d.LatLng).x +' '+map.latLngToLayerPoint(d.LatLng).y +')'})
             circles.attr("cx", 0)
             //boxes.attr('x', 20)
@@ -167,7 +290,7 @@
               .duration(100)
               .attr("r", get_radius);
         }
-
+        /*
         function translateSVG() {
             var viewBoxLeft = document.querySelector("svg.leaflet-zoom-animated").viewBox.animVal.x;
             var viewBoxTop = document.querySelector("svg.leaflet-zoom-animated").viewBox.animVal.y;
@@ -182,20 +305,22 @@
             svg.attr("style", function () {
                 return "transform: translate3d(" + viewBoxLeft + "px, " + viewBoxTop + "px, 0px);";
             });
-        }
+        }*/
 
-        map.on("moveend", update);
-        update();
+        /*map.on("moveend", update);
+        update();*/
 
+        /*
         var id = setInterval(function() {
-          if (month_index >= aggregates[0].sold_per_month.length - 1) {
+          if (month_index >= aggregates[0].stats_per_month.length - 1) {
             clearInterval(id);
             return;
           }
           month_index++;
-          d3.select('#month').text(aggregates[0].sold_per_month[month_index].month);
+          d3.select('#month').text(aggregates[0].stats_per_month[month_index].month);
           update_month();
         }, 1000);
+        */
       };
     /*      
     var svg = d3.select(map.getPanes().overlayPane).append("svg")
