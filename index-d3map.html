@@ -109,35 +109,41 @@
         var transform = d3.geo.transform({point: projectPoint}),
         path = d3.geo.path().projection(transform);
 
-        var paths = g.selectAll("path")
+
+        var paths_container   = g.append("g").attr("id", "paths"),
+            circles_container = g.append("g").attr("id", "circles"),
+            details_container = g.append("g").attr("id", "details");
+
+        var paths = paths_container.selectAll("path")
           .data(areas.features)
           .enter()
           .append("path")
           .attr("fill", "none")
           .attr("stroke-width", "3")
 
-                  // Append <circle> to <g>
         var area_containers = g.selectAll(".area")
-            .data(aggregates, function(d) { return d['name']})
+            .data(aggregates)
             .enter()
             .append("g")
 
-        var circles = area_containers
-            //g.selectAll("circle")
-            //.data(aggregates)
-            //.enter()
+        var circles = circles_container.selectAll("circle")
+            .data(aggregates)
+            .enter()
             .append("circle")
             .style("fill", "#fdbb84")
             .style("stroke", "grey")
             .style("stroke-width", "1")
             .style("opacity", ".8")
 
-        var details = area_containers
+
+        var details = details_container.selectAll(".detail")
+            .data(aggregates, function(d) {return d["name"];})
+            .enter()
             .append("g")
             .style('opacity', '0')
             .style('visibility', 'hidden')
             .style('pointer-event', 'none')
-            .attr("transform", "translate(10, 0)");
+            //.attr("transform", "translate(10, 0)");
 
         var boxes = details
             .append("rect")
@@ -167,12 +173,18 @@
 
             g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
 
-            paths.attr("d", path)
-            area_containers.attr('transform', function(d) {
-              return 'translate('+map.latLngToLayerPoint(d.LatLng).x +' '+map.latLngToLayerPoint(d.LatLng).y +')'})
+            paths.attr("d", path);
+            circles.attr("transform", function(d) {
+              x = map.latLngToLayerPoint(d.LatLng).x;
+              y = map.latLngToLayerPoint(d.LatLng).y;
+              return "translate("+ x +' '+ y +')'})
+                  .attr("r", get_radius)
+            details.attr("transform", function(d) {
+              x = map.latLngToLayerPoint(d.LatLng).x + 10;
+              y = map.latLngToLayerPoint(d.LatLng).y;
+              return "translate("+ x +' '+ y +')'})
             //circles.attr("cx", function(d) { return map.latLngToLayerPoint(d.LatLng).x; })
             //circles.attr("cy", function(d) { return map.latLngToLayerPoint(d.LatLng).y;} )
-            circles.attr("r", get_radius);
             texts.html(get_text);
         }
 
@@ -207,7 +219,8 @@
         */
 
         circles.on("mouseenter", function (d){
-              d3.select(this.nextSibling)
+              details.filter(function(area) {
+                return d['name'] == area['name'];})
                 .style('visibility', 'visible')
                 .transition()
                 .delay(100)
@@ -225,7 +238,8 @@
               .attr("y", (map.latLngToLayerPoint(d.LatLng).y +10));*/
             })
             .on("mouseleave", function (d){
-              d3.select(this.nextSibling)
+              details.filter(function(area) {
+                return d['name'] == area['name'];})
                 .transition()
                 .delay(100)
                 .duration(200)
