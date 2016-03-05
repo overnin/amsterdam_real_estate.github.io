@@ -12,7 +12,9 @@
       <script src="http://d3js.org/queue.v1.min.js"></script>
       -->
       <script src="js/d3.js" charset="utf-8"></script>
-      <script src="js/queue.v1.min.js"></script>
+      <script src="js/queue.v1.min.js" charset="utf-8"></script>
+      <script src="js/colorbrewer.js" charset="utf-8"></script>
+      <link rel="stylesheet" type="text/css" href="css/colorbrewer.css">
       <!--Leaflet / Mapbox 
       <script src='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
       <link href='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.class' rel='stylesheet' />
@@ -78,6 +80,20 @@
         aggregates.forEach(function(d) {
           d.LatLng = new L.LatLng(d.representative_point.coordinates[1], d.representative_point.coordinates[0]);
         });
+
+        aggregates = aggregates.filter(function(d) {
+          length = d["stats_per_month"].length - 1;
+          return d["stats_per_month"][length]['price_square_meter_mean'] != 0;
+        });
+
+        price_domain = d3.extent(aggregates, function(elt) {
+          length = elt["stats_per_month"].length - 1;
+          return elt["stats_per_month"][length]['price_square_meter_mean'];
+        });
+
+        var price_color = d3.scale.quantize()
+          .domain(price_domain)
+          .range(colorbrewer.OrRd[3]);
         /*
         aggregates.forEach(function(d) { 
           //map.addLayer(L.circle([d.representative_point.coordinates[1], d.representative_point.coordinates[0]], 10));
@@ -118,22 +134,29 @@
           .data(areas.features)
           .enter()
           .append("path")
-          .attr("fill", "none")
-          .attr("stroke-width", "3")
-
-        var area_containers = g.selectAll(".area")
-            .data(aggregates)
-            .enter()
-            .append("g")
+          .attr("fill", function(d) {
+            i = aggregates.findIndex(function(aggregate) {
+              return aggregate.name == d.properties.Gebied;
+              });
+            if (i == -1) {
+              return "#f0f0f0";
+            }
+            length = aggregates[i]["stats_per_month"].length - 1;
+            return price_color(aggregates[i]["stats_per_month"][length]['price_square_meter_mean']);})
+          .style("opacity", ".5")
+          .attr("stroke-width", "1")
 
         var circles = circles_container.selectAll("circle")
             .data(aggregates)
             .enter()
             .append("circle")
-            .style("fill", "#fdbb84")
+            /*.style("fill", function(d) {
+              length = d["stats_per_month"].length - 1;
+              //return price_color(d["stats_per_month"][length]['price_square_meter_mean']);
+              return "brown"})*/
             .style("stroke", "grey")
             .style("stroke-width", "1")
-            .style("opacity", ".8")
+            //.style("opacity", ".2")
 
 
         var details = details_container.selectAll(".detail")
@@ -143,8 +166,7 @@
             .style('opacity', '0')
             .style('visibility', 'hidden')
             .style('pointer-event', 'none')
-            //.attr("transform", "translate(10, 0)");
-
+            
         var boxes = details
             .append("rect")
             .style('fill', 'white')
@@ -179,6 +201,7 @@
               y = map.latLngToLayerPoint(d.LatLng).y;
               return "translate("+ x +' '+ y +')'})
                   .attr("r", get_radius)
+                  .attr("fill", get_color)
             details.attr("transform", function(d) {
               x = map.latLngToLayerPoint(d.LatLng).x + 10;
               y = map.latLngToLayerPoint(d.LatLng).y;
@@ -228,7 +251,8 @@
                 .style('opacity', '.9')
               paths.filter(function(area) {
                   return d['name'] == area.properties.Gebied;})
-                .attr("stroke", "grey");
+                .attr("stroke-width", "3")
+                .attr("stroke", "black");
               return d3.select(this).style("opacity", "1");
             })
             .on("mousemove", function(d){
@@ -247,18 +271,30 @@
                 .style('visibility', 'hidden');
               paths.filter(function(area) {
                   return d['name'] == area.properties.Gebied;})
+                //.attr("fill", "#bdbdbd")
                 .attr("stroke", "none");
               return d3.select(this).style("opacity", ".8");
             });
             //.attr("r", function(d) {return d.sold_per_month['2014-10']})
 
-        function get_radius(d) { 
-           return 0.001* Math.sqrt(d.stats_per_month[month_index].sold_percent * 100) * Math.pow(2, map.getZoom());
+        function get_radius(d) {
+           percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean);
+           //return 0.001* Math.sqrt(d.stats_per_month[month_index].sold_percent * 100) * Math.pow(2, map.getZoom());
+           return 0.006* Math.sqrt(Math.abs(percent)) * Math.pow(2, map.getZoom());
+         }
+
+         function get_color(d) {
+            percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean);
+            color = "red";
+            if (percent > 0) {
+              color = "green";
+            }
+            return color
          }
 
          function get_text(d) {
-            detail = '<tspan x="3">' +d['name']+ '</tspan>'
-            detail += '<tspan x="3" y="1.5em">' + NL.numberFormat("$f")(d.stats_per_month[month_index].price_square_meter_mean) + ' m2</tspan>';
+            detail = '<tspan x="3" style="text-decoration:underline;font-size:1.5em;">' +d['name']+ '</tspan>'
+            detail += '<tspan x="3" y="1.8em">' + NL.numberFormat("$f")(d.stats_per_month[month_index].price_square_meter_mean) + ' m2</tspan>';
             percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean)
             if (percent > 0) {
               color = 'green';
@@ -267,7 +303,7 @@
             }
             detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
 
-            detail += '<tspan x="3" y="3.5em">' + d.stats_per_month[month_index].sold_count + ' of sold</tspan>';
+            detail += '<tspan x="3" y="3em">' + d.stats_per_month[month_index].sold_count + ' sold properties</tspan>';
             percent = precentage_increase(d.stats_per_month[month_index-4].sold_percent, d.stats_per_month[month_index].sold_percent)
             if (percent > 0) {
               color = 'green';
