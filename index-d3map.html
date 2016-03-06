@@ -34,8 +34,9 @@
     height = 800;
 
     var center_lng = 4.9,
-    center_lat = 52.36,
-    month_index = 6;
+        center_lat = 52.36,
+        month_index = 6,
+        radius_limit = 10;
 
     NL = d3.locale(
       {
@@ -144,11 +145,15 @@
             length = aggregates[i]["stats_per_month"].length - 1;
             return price_color(aggregates[i]["stats_per_month"][length]['price_square_meter_mean']);})
           .style("opacity", ".5")
-          .attr("stroke-width", "1")
+          .attr("stroke-width", "3")
 
-        var circles = circles_container.selectAll("circle")
+        var circle_container = circles_container.selectAll(".circle")
             .data(aggregates)
             .enter()
+            .append("g")
+            .attr("class", "circle")
+
+        circle_container
             .append("circle")
             /*.style("fill", function(d) {
               length = d["stats_per_month"].length - 1;
@@ -157,6 +162,10 @@
             .style("stroke", "grey")
             .style("stroke-width", "1")
             //.style("opacity", ".2")
+        circle_container
+            .append("text")
+            .attr("text-anchor", "middle")
+                  
 
 
         var details = details_container.selectAll(".detail")
@@ -196,12 +205,21 @@
             g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
 
             paths.attr("d", path);
-            circles.attr("transform", function(d) {
+            circles_container.selectAll(".circle")
+              .attr("transform", function(d) {
               x = map.latLngToLayerPoint(d.LatLng).x;
               y = map.latLngToLayerPoint(d.LatLng).y;
               return "translate("+ x +' '+ y +')'})
+            circles_container.selectAll(".circle").selectAll("circle")
                   .attr("r", get_radius)
                   .attr("fill", get_color)
+            circles_container.selectAll(".circle").selectAll("text")
+                  .text(get_percent_rounded)
+                  .attr("text-anchor", get_label_anchor)
+                  .attr("fill", get_label_color)
+                  .attr("font-size", get_label_size)
+                  .attr("transform", get_label_position)
+
             details.attr("transform", function(d) {
               x = map.latLngToLayerPoint(d.LatLng).x + 10;
               y = map.latLngToLayerPoint(d.LatLng).y;
@@ -241,7 +259,7 @@
           .html("a simple tooltip");
         */
 
-        circles.on("mouseenter", function (d){
+        circle_container.on("mouseenter", function (d){
               details.filter(function(area) {
                 return d['name'] == area['name'];})
                 .style('visibility', 'visible')
@@ -251,7 +269,6 @@
                 .style('opacity', '.9')
               paths.filter(function(area) {
                   return d['name'] == area.properties.Gebied;})
-                .attr("stroke-width", "3")
                 .attr("stroke", "black");
               return d3.select(this).style("opacity", "1");
             })
@@ -277,19 +294,63 @@
             });
             //.attr("r", function(d) {return d.sold_per_month['2014-10']})
 
+        function get_percent(d) {
+          return precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean);
+        }
+
+        function get_percent_rounded(d) {
+          percent = get_percent(d);
+          if (Math.abs(percent) >= .01) { 
+            return NL.numberFormat("+%")(get_percent(d));
+          }
+           return NL.numberFormat("+.1%")(get_percent(d));
+        }
+
         function get_radius(d) {
-           percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean);
+           percent = get_percent(d)
            //return 0.001* Math.sqrt(d.stats_per_month[month_index].sold_percent * 100) * Math.pow(2, map.getZoom());
-           return 0.006* Math.sqrt(Math.abs(percent)) * Math.pow(2, map.getZoom());
+           return  Math.sqrt(0.5 * Math.abs(percent) * Math.pow(2, map.getZoom())) ;
          }
 
          function get_color(d) {
-            percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean);
+            percent = get_percent(d)
             color = "red";
             if (percent > 0) {
               color = "green";
             }
             return color
+         }
+
+         function get_label_anchor(d) {
+           r = get_radius(d)
+           if (r > radius_limit) {
+            return "middle";
+           }
+           return "start"; 
+         }
+
+         function get_label_size(d) {
+           r = get_radius(d)
+           if (r > radius_limit) {
+            return r/2 +2;
+           }
+           return 10; 
+         }
+
+         function get_label_color(d) {
+            r = get_radius(d)
+            if (r > radius_limit) {
+              return "white";
+            } 
+            return "black";
+         }
+
+         function get_label_position(d){
+            r = get_radius(d)
+            if (r > radius_limit) {
+              return "translate(0 3)";
+            }
+            return "translate("+(r+5)+" 3)"; 
          }
 
          function get_text(d) {
