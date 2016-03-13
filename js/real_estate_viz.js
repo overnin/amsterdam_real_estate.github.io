@@ -23,8 +23,8 @@ var realEstateViz = (function() {
 
   function init() {
     queue()
-      .defer(d3.json, 'json/amsterdam_admin_level_3_adjusted_centroid.json')
-      .defer(d3.json, 'json/amsterdam_admin_level_3_aggregate.json')
+      .defer(d3.json, "json/amsterdam_admin_level_3_adjusted_centroid.json")
+      .defer(d3.json, "json/amsterdam_admin_level_3_aggregate.json")
       .await(buildViz); 
   }
   init();
@@ -32,8 +32,8 @@ var realEstateViz = (function() {
   function buildViz(error, areas, aggregates) {
     if (error) return console.error(error);
 
-    L.mapbox.accessToken = 'pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw';
-    var map = L.mapbox.map('map', 'mapbox.streets')
+    L.mapbox.accessToken = "pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw";
+    var map = L.mapbox.map("map", "mapbox.streets")
       .setView([center_lat, center_lng], 12);
     resize();
 
@@ -51,12 +51,12 @@ var realEstateViz = (function() {
 
     aggregates = aggregates.filter(function(d) {
       length = d["stats_per_month"].length - 1;
-      return d["stats_per_month"][length]['price_square_meter_mean'] != 0;
+      return d["stats_per_month"][length]["price_square_meter_mean"] != 0;
     });
 
     price_domain = d3.extent(aggregates, function(elt) {
       length = elt["stats_per_month"].length - 1;
-      return elt["stats_per_month"][length]['price_square_meter_mean'];
+      return elt["stats_per_month"][length]["price_square_meter_mean"];
     });
 
     var price_color = d3.scale.quantize()
@@ -97,7 +97,7 @@ var realEstateViz = (function() {
           return "#f0f0f0";
         }
         length = aggregates[i]["stats_per_month"].length - 1;
-        return price_color(aggregates[i]["stats_per_month"][length]['price_square_meter_mean']);})
+        return price_color(aggregates[i]["stats_per_month"][length]["price_square_meter_mean"]);})
       .style("opacity", ".7")
       .attr("stroke-width", "3")
 
@@ -121,22 +121,22 @@ var realEstateViz = (function() {
       .data(aggregates, function(d) {return d["name"];})
       .enter()
       .append("g")
-      .style('opacity', '0')
-      .style('visibility', 'hidden')
-      .style('pointer-event', 'none')
+      .style("opacity", "0")
+      .style("visibility", "hidden")
+      .style("pointer-event", "none")
 
     var boxes = details
       .append("rect")
-      .style('fill', 'white')
-      .attr('x', '0')
-      .attr('y', '-10')
-      .attr('height', "100")
-      .attr('width', "200")
+      .style("fill", "white")
+      .attr("x", "0")
+      .attr("y", "-10")
+      .attr("height", "100")
+      .attr("width", "200")
 
     var texts = details
-      .append('text')
-      .attr('x', '5')
-      .attr('y', '5')
+      .append("text")
+      .attr("x", "5")
+      .attr("y", "5")
 
     map.on("viewreset", reset);
     reset();
@@ -158,7 +158,7 @@ var realEstateViz = (function() {
         .attr("transform", function(d) {
           x = map.latLngToLayerPoint(d.LatLng).x;
           y = map.latLngToLayerPoint(d.LatLng).y;
-          return "translate("+ x +' '+ y +')'})
+          return "translate("+ x +" "+ y +")"})
       circles_container.selectAll(".circle").selectAll("circle")
         .attr("r", get_radius)
         .attr("fill", get_color)
@@ -172,7 +172,7 @@ var realEstateViz = (function() {
       details.attr("transform", function(d) {
         x = map.latLngToLayerPoint(d.LatLng).x + 10;
         y = map.latLngToLayerPoint(d.LatLng).y;
-        return "translate("+ x +' '+ y +')'})
+        return "translate("+ x +" "+ y +")"})
 
       texts.html(get_text);
     }
@@ -181,15 +181,15 @@ var realEstateViz = (function() {
     circle_container
       .on("mouseenter", function (d){
         details.filter(function(area) {
-          return d['name'] == area['name'];})
-          .style('visibility', 'visible')
+          return d["name"] == area["name"];})
+          .style("visibility", "visible")
           .transition()
           .delay(100)
           .duration(400)
-          .style('opacity', '.9')
+          .style("opacity", ".9")
         
         paths.filter(function(area) {
-            return d['name'] == area.properties.Gebied;})
+            return d["name"] == area.properties.Gebied;})
           .attr("stroke", "black");
         
         return d3.select(this).style("opacity", "1");
@@ -197,15 +197,15 @@ var realEstateViz = (function() {
       .on("mousemove", function(d){ return; })
       .on("mouseleave", function (d){
         details.filter(function(area) {
-          return d['name'] == area['name'];})
+          return d["name"] == area["name"];})
           .transition()
           .delay(100)
           .duration(200)
           .style("opacity", "0")
-          .style('visibility', 'hidden');
+          .style("visibility", "hidden");
         
         paths.filter(function(area) {
-          return d['name'] == area.properties.Gebied;})
+          return d["name"] == area.properties.Gebied;})
             .attr("stroke", "none");
         
         return d3.select(this).style("opacity", ".8");
@@ -271,22 +271,22 @@ var realEstateViz = (function() {
       }
 
       function get_text(d) {
-        detail = '<tspan x="3" style="text-decoration:underline;font-size:1.5em;">' +d['name']+ '</tspan>'
+        detail = '<tspan x="3" style="text-decoration:underline;font-size:1.5em;">' +d["name"]+ '</tspan>'
         detail += '<tspan x="3" y="1.8em">' + NL.numberFormat("$f")(d.stats_per_month[month_index].price_square_meter_mean) + ' m2</tspan>';
         percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean)
         if (percent > 0) {
-          color = 'green';
+          color = "green";
         } else {
-          color = 'red';
+          color = "red";
         }
         detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
 
         detail += '<tspan x="3" y="3em">' + d.stats_per_month[month_index].sold_count + ' sold properties</tspan>';
         percent = precentage_increase(d.stats_per_month[month_index-4].sold_percent, d.stats_per_month[month_index].sold_percent)
         if (percent > 0) {
-          color = 'green';
+          color = "green";
         } else {
-          color = 'red';
+          color = "red";
         }
         detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
         return detail;
@@ -300,8 +300,8 @@ var realEstateViz = (function() {
         return ((b-a) / a)
       }
     }
-    
+
   return {
-    'init': init};
+    "init": init};
 
 })();
