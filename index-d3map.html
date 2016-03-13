@@ -5,6 +5,9 @@
       <title>
          Amsterdam Real Estate Explorer 
       </title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      
       <link rel="stylesheet" type="text/css" href="css/map.css">
       <!-- D3 -->
       <!--
@@ -14,21 +17,29 @@
       <script src="js/d3.js" charset="utf-8"></script>
       <script src="js/queue.v1.min.js" charset="utf-8"></script>
       <script src="js/colorbrewer.js" charset="utf-8"></script>
-      <link rel="stylesheet" type="text/css" href="css/colorbrewer.css">
+      <link rel="stylesheet" type="text/css" href="css/colorbrewer.css"></link>
       <!--Leaflet / Mapbox 
-      <script src='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
-      <link href='https://api.tiles.mapbox.com/mapbox.js/v2.3.0/mapbox.class' rel='stylesheet' />
-      -->
+      <script src='https://api.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
+      <link href='https://api.mapbox.com/mapbox.js/v2.3.0/mapbox.css' rel='stylesheet' /></script>
+       -->
       <script src='js/mapbox.js'></script>
-      <link href='css/mapbox.class' rel='stylesheet' />
-      
+      <link href='css/mapbox.css' rel='stylesheet' />
+      <link rel="stylesheet" href="css/bootstrap.min.css"/>
+      <script src='js/mapbox_bootstrap_height_fix.js'></script>
+
+      <!--
+      <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    -->
    </head>
 <body>
-   <span id='sidebar' style='width:20%'>
-       <h3 style='display:inline'>Amsterdam</h3>
-       <p id="month" style='display:inline'> </p>
-   </span>
-   <span id='map' style="float:right;width:80%;height:100%"></span>
+   <div class="container-fluid" style="height:100%">
+   <div class="row" style="height:100%">
+     <div class="col-md-3">Evolution of the price per square meter in amsterdam on funda website.</div>
+     <div class="col-md-9">
+        <div id='map' style="min-height:300px"></div>
+     </div>
+   </div>
+ </div>
    <script>
     var width = 1440,
     height = 800;
@@ -61,12 +72,14 @@
       .defer(d3.json, 'json/amsterdam_admin_level_3_aggregate.json')
       .await(buildViz);
 
+    L.mapbox.accessToken = 'pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw';
+    var map = L.mapbox.map('map', 'mapbox.streets')
+          .setView([center_lat, center_lng], 12);
+    resize(); 
+
     function buildViz(error, areas, aggregates) {
         if (error) return console.error(error);
 
-        L.mapbox.accessToken = 'pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw';
-        var map = L.mapbox.map('map', 'mapbox.streets')
-              .setView([center_lat, center_lng], 12);
         
         //map.featureLayer.setGeoJSON(areas);
 
@@ -144,7 +157,7 @@
             }
             length = aggregates[i]["stats_per_month"].length - 1;
             return price_color(aggregates[i]["stats_per_month"][length]['price_square_meter_mean']);})
-          .style("opacity", ".5")
+          .style("opacity", ".7")
           .attr("stroke-width", "3")
 
         var circle_container = circles_container.selectAll(".circle")
