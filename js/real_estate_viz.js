@@ -22,12 +22,12 @@ var realEstateViz = (function() {
 
 
   function init() {
+    resize();
     queue()
       .defer(d3.json, "json/amsterdam_admin_level_3_adjusted_centroid.json")
       .defer(d3.json, "json/amsterdam_admin_level_3_aggregate.json")
-      .await(buildViz); 
+      .await(buildViz);
   }
-  init();
 
   function buildViz(error, areas, aggregates) {
     if (error) return console.error(error);
@@ -35,7 +35,7 @@ var realEstateViz = (function() {
     L.mapbox.accessToken = "pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw";
     var map = L.mapbox.map("map", "mapbox.streets")
       .setView([center_lat, center_lng], 12);
-    resize();
+    
 
     //data preprocess to be done in python
     areas.features.forEach(function(area) {
@@ -49,10 +49,10 @@ var realEstateViz = (function() {
       d.LatLng = new L.LatLng(d.representative_point.coordinates[1], d.representative_point.coordinates[0]);
     });
 
-    aggregates = aggregates.filter(function(d) {
+    /*aggregates = aggregates.filter(function(d) {
       length = d["stats_per_month"].length - 1;
       return d["stats_per_month"][length]["price_square_meter_mean"] != 0;
-    });
+    });*/
 
     price_domain = d3.extent(aggregates, function(elt) {
       length = elt["stats_per_month"].length - 1;
@@ -99,7 +99,7 @@ var realEstateViz = (function() {
         length = aggregates[i]["stats_per_month"].length - 1;
         return price_color(aggregates[i]["stats_per_month"][length]["price_square_meter_mean"]);})
       .style("opacity", ".7")
-      .attr("stroke-width", "3")
+      .attr("stroke-width", "1")
 
     var circle_container = circles_container.selectAll(".circle")
       .data(aggregates)
@@ -114,8 +114,6 @@ var realEstateViz = (function() {
       circle_container
       .append("text")
       .attr("text-anchor", "middle")
-
-
 
     var details = details_container.selectAll(".detail")
       .data(aggregates, function(d) {return d["name"];})
@@ -177,131 +175,195 @@ var realEstateViz = (function() {
       texts.html(get_text);
     }
 
-
-    circle_container
-      .on("mouseenter", function (d){
-        details.filter(function(area) {
-          return d["name"] == area["name"];})
-          .style("visibility", "visible")
-          .transition()
-          .delay(100)
-          .duration(400)
-          .style("opacity", ".9")
-        
-        paths.filter(function(area) {
-            return d["name"] == area.properties.Gebied;})
-          .attr("stroke", "black");
-        
-        return d3.select(this).style("opacity", "1");
-      })
-      .on("mousemove", function(d){ return; })
-      .on("mouseleave", function (d){
-        details.filter(function(area) {
-          return d["name"] == area["name"];})
-          .transition()
-          .delay(100)
-          .duration(200)
-          .style("opacity", "0")
-          .style("visibility", "hidden");
-        
-        paths.filter(function(area) {
-          return d["name"] == area.properties.Gebied;})
-            .attr("stroke", "none");
-        
-        return d3.select(this).style("opacity", ".8");
-      });
-        
-      function get_percent(d) {
-        return precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean);
-      }
-
-      function get_percent_rounded(d) {
-        percent = get_percent(d);
-        if (Math.abs(percent) >= .01) { 
-          return NL.numberFormat("+%")(get_percent(d));
-        }
-        return NL.numberFormat("+.1%")(get_percent(d));
-      }
-
-      function get_radius(d) {
-        percent = get_percent(d)
-        //return 0.001* Math.sqrt(d.stats_per_month[month_index].sold_percent * 100) * Math.pow(2, map.getZoom());
-        return  Math.sqrt(0.5 * Math.abs(percent) * Math.pow(2, map.getZoom())) ;
-      }
-
-      function get_color(d) {
-        percent = get_percent(d)
-        color = "red";
-        if (percent > 0) {
-          color = "green";
-        }
-        return color;
-      }
-
-      function get_label_anchor(d) {
-        r = get_radius(d)
-        if (r > radius_limit) {
-          return "middle";
-        }
-        return "start"; 
-      }
-
-      function get_label_size(d) {
-        r = get_radius(d)
-        if (r > radius_limit) {
-          return r/2 +2;
-        }
-        return 10; 
-      }
-
-      function get_label_color(d) {
-        r = get_radius(d)
-        if (r > radius_limit) {
-          return "white";
-        } 
-        return "black";
-      }
-
-      function get_label_position(d){
-        r = get_radius(d)
-        if (r > radius_limit) {
-          return "translate(0 3)";
-        }
-        return "translate("+(r+5)+" 3)"; 
-      }
-
-      function get_text(d) {
-        detail = '<tspan x="3" style="text-decoration:underline;font-size:1.5em;">' +d["name"]+ '</tspan>'
-        detail += '<tspan x="3" y="1.8em">' + NL.numberFormat("$f")(d.stats_per_month[month_index].price_square_meter_mean) + ' m2</tspan>';
-        percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean)
-        if (percent > 0) {
-          color = "green";
-        } else {
-          color = "red";
-        }
-        detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
-
-        detail += '<tspan x="3" y="3em">' + d.stats_per_month[month_index].sold_count + ' sold properties</tspan>';
-        percent = precentage_increase(d.stats_per_month[month_index-4].sold_percent, d.stats_per_month[month_index].sold_percent)
-        if (percent > 0) {
-          color = "green";
-        } else {
-          color = "red";
-        }
-        detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
-        return detail;
-      }
-
-      function round_2decimal(a) {
-        return Math.round(100 * a) / 100;
-      }
-
-      function precentage_increase(a, b) {
-        return ((b-a) / a)
-      }
+    function entering_area(d) {
+      details.filter(function(area) {
+        return d.properties.Gebied == area["name"];})
+        .style("visibility", "visible")
+        .transition()
+        .delay(100)
+        .duration(400)
+        .style("opacity", ".9")
+      
+      d3.select(this).attr("stroke", "black");
+    }
+    
+    function exiting_area(d) {
+      details.filter(function(area) {
+        return d.properties.Gebied == area["name"];})
+        .transition()
+        .delay(100)
+        .duration(200)
+        .style("opacity", "0")
+        .style("visibility", "hidden");
+      
+      d3.select(this).attr("stroke", "none");
     }
 
+    function entering_detail(d) {
+      details.filter(function(area) {
+          return d["name"] == area["name"];})
+       .style("visibility", "visible")
+       .transition()
+       .delay(100)
+       .duration(400)
+       .style("opacity", ".9")
+
+       paths.filter(function(area) {
+         return d["name"] == area.properties.Gebied;})
+       .attr("stroke", "black");
+
+    }
+
+    function exiting_detail(d) {
+      details.filter(function(area) {
+        return d["name"] == area["name"];})
+        .transition()
+        .delay(100)
+        .duration(200)
+        .style("opacity", "0")
+        .style("visibility", "hidden");
+
+      paths.filter(function(area) {
+        return d["name"] == area.properties.Gebied;})
+          .attr("stroke", "none");
+    }
+
+
+    function entering_circle(d) {
+      details.filter(function(area) {
+          return d["name"] == area["name"];})
+       .style("visibility", "visible")
+       .transition()
+       .delay(100)
+       .duration(400)
+       .style("opacity", ".9")
+
+       paths.filter(function(area) {
+         return d["name"] == area.properties.Gebied;})
+       .attr("stroke", "black");
+
+      return d3.select(this).style("opacity", "1");
+    }
+
+    function exiting_circle(d) {
+      details.filter(function(area) {
+        return d["name"] == area["name"];})
+        .transition()
+        .delay(100)
+        .duration(200)
+        .style("opacity", "0")
+        .style("visibility", "hidden");
+
+      paths.filter(function(area) {
+        return d["name"] == area.properties.Gebied;})
+          .attr("stroke", "none");
+      return d3.select(this).style("opacity", ".8");
+    }
+
+    paths
+      .on("mouseenter", entering_area)
+      .on("mouseleave", exiting_area);
+
+    details
+      .on("mouseenter", entering_detail)
+      .on("mouseleave", exiting_detail);
+
+    circle_container
+      .on("mouseenter", entering_circle)
+      .on("mouseleave", exiting_circle);
+
+    function get_percent(d) {
+      return precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean);
+    }
+
+    function get_percent_rounded(d) {
+      percent = get_percent(d);
+      if (Math.abs(percent) >= .01) { 
+        return NL.numberFormat("+%")(get_percent(d));
+      }
+      return NL.numberFormat("+.1%")(get_percent(d));
+    }
+
+    function get_radius(d) {
+      percent = get_percent(d)
+      //return 0.001* Math.sqrt(d.stats_per_month[month_index].sold_percent * 100) * Math.pow(2, map.getZoom());
+      return  Math.sqrt(0.5 * Math.abs(percent) * Math.pow(2, map.getZoom())) ;
+    }
+
+    function get_color(d) {
+      percent = get_percent(d)
+      color = "red";
+      if (percent > 0) {
+        color = "green";
+      }
+      return color;
+    }
+
+    function get_label_anchor(d) {
+      r = get_radius(d)
+      if (r > radius_limit) {
+        return "middle";
+      }
+      return "start"; 
+    }
+
+    function get_label_size(d) {
+      r = get_radius(d)
+      if (r > radius_limit) {
+        return r/2 +2;
+      }
+      return 10; 
+    }
+
+    function get_label_color(d) {
+      r = get_radius(d)
+      if (r > radius_limit) {
+        return "white";
+      } 
+      return "black";
+    }
+
+    function get_label_position(d){
+      r = get_radius(d)
+      if (r > radius_limit) {
+        return "translate(0 3)";
+      }
+      return "translate("+(r+5)+" 3)"; 
+    }
+
+    function get_text(d) {
+      detail = '<tspan x="3" style="text-decoration:underline;font-size:1.5em;">' +d["name"]+ '</tspan>'
+      detail += '<tspan x="3" y="1.8em">' + NL.numberFormat("$f")(d.stats_per_month[month_index].price_square_meter_mean) + ' m2</tspan>';
+      percent = precentage_increase(d.stats_per_month[month_index-4].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean)
+      if (percent > 0) {
+        color = "green";
+      } else {
+        color = "red";
+      }
+      detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
+
+      detail += '<tspan x="3" y="3em">' + d.stats_per_month[month_index].sold_count + ' sold properties</tspan>';
+      percent = precentage_increase(d.stats_per_month[month_index-4].sold_percent, d.stats_per_month[month_index].sold_percent)
+      if (percent > 0) {
+        color = "green";
+      } else {
+        color = "red";
+      }
+      detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
+      return detail;
+    }
+
+    function round_2decimal(a) {
+      return Math.round(100 * a) / 100;
+    }
+
+    function precentage_increase(a, b) {
+      return ((b-a) / a)
+    }
+  }
+
   return {
-    "init": init};
+    "init": init
+  };
 
 })();
