@@ -24,12 +24,11 @@ var realEstateViz = (function() {
   function init() {
     resize();
     queue()
-      .defer(d3.json, "json/amsterdam_admin_level_3_adjusted_centroid.json")
       .defer(d3.json, "json/amsterdam_admin_level_3_aggregate.json")
       .await(buildViz);
   }
 
-  function buildViz(error, areas, aggregates) {
+  function buildViz(error, aggregates) {
     if (error) return console.error(error);
 
     L.mapbox.accessToken = "pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw";
@@ -38,23 +37,23 @@ var realEstateViz = (function() {
     
 
     //data preprocess to be done in python
-    areas.features.forEach(function(area) {
+    /*areas.features.forEach(function(area) {
       i = aggregates.findIndex(function(aggregate) {
         return aggregate.name == area.properties.Gebied;
       });
       aggregates[i].representative_point = area.properties.representative_point;
-    });
-
+    */
     aggregates.forEach(function(d) {
       d.LatLng = new L.LatLng(d.representative_point.coordinates[1], d.representative_point.coordinates[0]);
+      d.type = "Feature"; // to move in python
     });
 
-    /*aggregates = aggregates.filter(function(d) {
+    aggregates_temp = aggregates.filter(function(d) {
       length = d["stats_per_month"].length - 1;
-      return d["stats_per_month"][length]["price_square_meter_mean"] != 0;
-    });*/
+      return d["stats_per_month"][length]["price_square_meter_mean"] != null;
+    });
 
-    price_domain = d3.extent(aggregates, function(elt) {
+    price_domain = d3.extent(aggregates_temp, function(elt) {
       length = elt["stats_per_month"].length - 1;
       return elt["stats_per_month"][length]["price_square_meter_mean"];
     });
@@ -86,18 +85,13 @@ var realEstateViz = (function() {
         details_container = g.append("g").attr("id", "details");
 
     var paths = paths_container.selectAll("path")
-      .data(areas.features)
+      .data(aggregates)
       .enter()
       .append("path")
+      .attr("d", path)
       .attr("fill", function(d) {
-        i = aggregates.findIndex(function(aggregate) {
-          return aggregate.name == d.properties.Gebied;
-        });
-        if (i == -1) {
-          return "#f0f0f0";
-        }
-        length = aggregates[i]["stats_per_month"].length - 1;
-        return price_color(aggregates[i]["stats_per_month"][length]["price_square_meter_mean"]);})
+        length = d["stats_per_month"].length - 1;
+        return price_color(d["stats_per_month"][length]["price_square_meter_mean"]);})
       .style("opacity", ".7")
       .attr("stroke-width", "1")
 
@@ -140,7 +134,7 @@ var realEstateViz = (function() {
     reset();
 
     function reset() {
-      var bounds = path.bounds(areas),
+      var bounds = path.bounds({"type": "FeatureCollection", "features":aggregates}),
           topLeft = bounds[0],
           bottomRight = bounds[1];
 
@@ -177,7 +171,7 @@ var realEstateViz = (function() {
 
     function entering_area(d) {
       details.filter(function(area) {
-        return d.properties.Gebied == area["name"];})
+        return d["name"] == area["name"];})
         .style("visibility", "visible")
         .transition()
         .delay(100)
@@ -189,7 +183,7 @@ var realEstateViz = (function() {
     
     function exiting_area(d) {
       details.filter(function(area) {
-        return d.properties.Gebied == area["name"];})
+        return d["name"] == area["name"];})
         .transition()
         .delay(100)
         .duration(200)
@@ -209,7 +203,7 @@ var realEstateViz = (function() {
        .style("opacity", ".9")
 
        paths.filter(function(area) {
-         return d["name"] == area.properties.Gebied;})
+         return d["name"] == area["name"];})
        .attr("stroke", "black");
 
     }
@@ -224,7 +218,7 @@ var realEstateViz = (function() {
         .style("visibility", "hidden");
 
       paths.filter(function(area) {
-        return d["name"] == area.properties.Gebied;})
+        return d["name"] == area["name"];})
           .attr("stroke", "none");
     }
 
@@ -239,10 +233,9 @@ var realEstateViz = (function() {
        .style("opacity", ".9")
 
        paths.filter(function(area) {
-         return d["name"] == area.properties.Gebied;})
+         return d["name"] == area["name"];})
        .attr("stroke", "black");
 
-      return d3.select(this).style("opacity", "1");
     }
 
     function exiting_circle(d) {
@@ -255,9 +248,8 @@ var realEstateViz = (function() {
         .style("visibility", "hidden");
 
       paths.filter(function(area) {
-        return d["name"] == area.properties.Gebied;})
+        return d["name"] == area["name"];})
           .attr("stroke", "none");
-      return d3.select(this).style("opacity", ".8");
     }
 
     paths
