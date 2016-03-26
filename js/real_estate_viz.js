@@ -65,6 +65,53 @@ var realEstateViz = (function() {
     var aggregates_filtered = filter_aggregates(aggregates),
         price_color = get_price_color_scale(aggregates_filtered);
 
+    //build legend
+    var figures = d3.select("#figures");
+    var keys = figures.selectAll("li.figure")
+        .data(price_color.range())
+        .enter()
+        .append("li")
+        .attr("class", "figure")
+        .html(function(d) {
+            var r = price_color.invertExtent(d);
+            v =  NL.numberFormat("$f")(r[0].toFixed(0));
+            return v;
+        });
+    //add top end value
+    var last_val = NL.numberFormat("$f")(price_domain[1].toFixed(0))
+    figures.append("li")
+        .attr("class", "figure")
+        .html(last_val);
+
+    var colors = d3.select("#colors");
+    var keys = colors.selectAll("li.key")
+      .data(price_color.range())
+      .enter()
+      .append("li")
+      .attr("class", "key")
+      .style("background", String);
+
+
+    var growth_legend = d3.select("#growth-legend")
+        .append("g")
+        .attr("transform", "translate(16 15)")
+      growth_legend
+        .append("circle")
+        .style("stroke", "grey")
+        .style("stroke-width", "1")
+//        .attr("cx", "20")
+//        .attr("cy", "20")
+        .attr("r", "14")
+        .attr("fill", "green");
+      growth_legend
+        .append("text")
+        .attr("transform", "translate(1 5)")
+        .attr("text-anchor", "middle")
+        .attr("fill", "white")
+        .attr("font-size", "12")
+        .text("+5%")
+
+    //create map
     L.mapbox.accessToken = "pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw";
     var map = L.mapbox.map("map", "mapbox.streets")
       .setView([center_lat, center_lng], 12);
@@ -114,7 +161,7 @@ var realEstateViz = (function() {
       .append("circle")
       .style("stroke", "grey")
       .style("stroke-width", "1")
-      circle_container
+    circle_container
       .append("text")
       .attr("text-anchor", "middle")
 
@@ -140,7 +187,7 @@ var realEstateViz = (function() {
       .attr("y", "5")
 
     map.on("viewreset", reset);
-    reset();
+    reset();   // require to finalize the viz set up
 
     function reset() {
       var bounds = path.bounds({"type": "FeatureCollection", "features":aggregates}),
@@ -362,6 +409,10 @@ var realEstateViz = (function() {
     }
 
     function precentage_increase(a, b) {
+      //growth per quarter
+      //var periods = month_index - month_compare_index;
+      //return (Math.pow(b/a, 1/periods)-1);
+      //growth total
       return ((b-a) / a);
     }
   }

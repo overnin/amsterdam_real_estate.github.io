@@ -52,6 +52,7 @@ h2 {
 
 #map-legend .list-inline {
 	margin-top: 0;
+  margin-left: 0;
 	padding-left: 0;
   list-style: none;
 }
@@ -69,6 +70,34 @@ h2 {
     padding-right: 0;
 }
 
+#map-legend-2 ul {
+    height: .75em;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+#map-legend-2 li {
+    padding: 0;
+    margin: 0;
+    border: 0;  
+}
+
+.fixed-space-14 {
+    width: 14px;
+}
+
+#map-legend-2 li.key {
+    height: 15px;
+    background: blue;
+    font-size: .75em;
+    width: 22%;
+}
+
+#map-legend-2 li.figure {
+    font-size: .75em;
+    width: 22%;
+}
 
 /* for the line graph */
 .axis path,

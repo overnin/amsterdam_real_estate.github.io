@@ -18,13 +18,13 @@
       <script src='https://api.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
       <link href='https://api.mapbox.com/mapbox.js/v2.3.0/mapbox.css' rel='stylesheet' /></script>
        -->
-      <script src='js/lib/mapbox.js'></script>
-      <link href='css/lib/mapbox.css' rel='stylesheet' />
+      <script src="js/lib/mapbox.js"></script>
+      <link href="css/lib/mapbox.css" rel="stylesheet" />
 
       <link rel="stylesheet" href="css/lib/bootstrap.min.css"/>
       
-      <script src='js/mapbox_bootstrap_height_fix.js'></script>
-      <script src='js/real_estate_viz.js'></script>
+      <script src="js/mapbox_bootstrap_height_fix.js"></script>
+      <script src="js/real_estate_viz.js"></script>
       <!--
       <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
     -->
@@ -33,10 +33,23 @@
   <div class="container-fluid" style="height:100%">
     <div class="row" style="height:100%">
       <div class="col-md-3">
-        <h3>Real estate price trend for Amsterdam on <a href="http://funda.nl">funda website</a>.</h3>
+        <h3>Real estate price trend in the city of Amsterdam on the <a href="http://funda.nl">funda website</a>.</h3>
+        <br/>
+        <p style="margin-bottom:0px">Euro/square meter median per areas</p>
+        <div id="map-legend-2">
+          <ul id="colors" class="list-inline">
+            <li class="fixed-space-14"></li>
+          </ul>
+          <ul id="figures" class="list-inline">
+          </ul>
+        </div>
+        <br/>
+        <p style="margin-bottom:0px">Euro/square meter trends over last year<p>
+        <svg id="growth-legend" height="40">
+        </svg>
       </div>
       <div class="col-md-9">
-        <div id='map' style="min-height:300px"></div>
+        <div id="map" style="min-height:300px"></div>
       </div>
     </div>
   </div>
