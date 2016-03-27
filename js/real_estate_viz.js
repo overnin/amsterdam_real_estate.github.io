@@ -61,6 +61,11 @@ var realEstateViz = (function() {
   function build_viz(error, aggregates) {
     if (error) return console.error(error);
 
+    //create map
+    L.mapbox.accessToken = "pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw";
+    var map = L.mapbox.map("map", "mapbox.streets")
+      .setView([center_lat, center_lng], 12);
+
     preprocess(aggregates);
     var aggregates_filtered = filter_aggregates(aggregates),
         price_color = get_price_color_scale(aggregates_filtered);
@@ -91,30 +96,23 @@ var realEstateViz = (function() {
       .attr("class", "color")
       .style("background", String);
 
-
+    var weighted_increase = weighted_overall_increase(aggregates);
     var growth_legend = d3.select("#growth-legend")
         .append("g")
-        .attr("transform", "translate(16 15)")
+        .attr("transform", "translate(19 18)")
       growth_legend
         .append("circle")
         .style("stroke", "grey")
         .style("stroke-width", "1")
-//        .attr("cx", "20")
-//        .attr("cy", "20")
-        .attr("r", "14")
-        .attr("fill", "green");
+        .attr("r", function() {return get_radius(weighted_increase)})
+        .attr("fill", function() {return get_color(weighted_increase)});
       growth_legend
         .append("text")
         .attr("transform", "translate(1 5)")
         .attr("text-anchor", "middle")
         .attr("fill", "white")
         .attr("font-size", "12")
-        .text("+5%")
-
-    //create map
-    L.mapbox.accessToken = "pk.eyJ1Ijoib2xpdmllcnZlcm5pbiIsImEiOiJjaWtzNjk5MXcwYXh6dW1tMWlubTlyc2JyIn0.aub3AlNziJHJh8TvhhOUJw";
-    var map = L.mapbox.map("map", "mapbox.streets")
-      .setView([center_lat, center_lng], 12);
+        .text(function() {return get_percent_rounded(weighted_increase);})
 
     var svg = d3.select(map.getPanes().overlayPane)
       .append("svg")
@@ -209,10 +207,10 @@ var realEstateViz = (function() {
           y = map.latLngToLayerPoint(d.LatLng).y;
           return "translate("+ x +" "+ y +")"})
       circles_container.selectAll(".circle").selectAll("circle")
-        .attr("r", get_radius)
-        .attr("fill", get_color)
+        .attr("r", get_aggregate_radius)
+        .attr("fill", get_aggregate_color)
       circles_container.selectAll(".circle").selectAll("text")
-        .text(get_percent_rounded)
+        .text(get_aggregate_percent_rounded)
         .attr("text-anchor", get_label_anchor)
         .attr("fill", get_label_color)
         .attr("font-size", get_label_size)
@@ -320,6 +318,17 @@ var realEstateViz = (function() {
       .on("mouseenter", entering_circle)
       .on("mouseleave", exiting_circle);
 
+
+    function weighted_overall_increase(aggregates) {
+      var total_sold = 0,
+          total_percent = 0;
+      aggregates.forEach(function(d) {
+        total_percent += d["stats_per_month"][month_index]['sold_count'] * get_percent(d);
+        total_sold += d["stats_per_month"][month_index]['sold_count'];
+      });
+      return total_percent / total_sold;
+    }
+
     function get_percent(d) {
       if (d["stats_per_month"][month_index]["price_square_meter_mean"] == null) {
         return 0;
@@ -327,22 +336,33 @@ var realEstateViz = (function() {
       return precentage_increase(d["stats_per_month"][month_compare_index]["price_square_meter_mean"], d["stats_per_month"][month_index]["price_square_meter_mean"]);
     }
 
-    function get_percent_rounded(d) {
-      percent = get_percent(d);
+    function get_percent_rounded(percent) {
       if (Math.abs(percent) >= .01) { 
-        return NL.numberFormat("+%")(get_percent(d));
+        return NL.numberFormat("+%")(percent);
       }
-      return NL.numberFormat("+.1%")(get_percent(d));
+      return NL.numberFormat("+.1%")(percent);
     }
 
-    function get_radius(d) {
-      percent = get_percent(d)
-      //return 0.001* Math.sqrt(d.stats_per_month[month_index].sold_percent * 100) * Math.pow(2, map.getZoom());
-      return  Math.sqrt(0.5 * Math.abs(percent) * Math.pow(2, map.getZoom())) ;
+    function get_aggregate_percent_rounded(d) {
+      percent = get_percent(d);
+      return get_percent_rounded(percent);
     }
 
-    function get_color(d) {
+    function get_aggregate_radius(d) {
       percent = get_percent(d)
+      return get_radius(percent);
+    }
+
+    function get_radius(percent) {
+      return  Math.sqrt(0.5 * Math.abs(percent) * Math.pow(2, map.getZoom())) ; 
+    }
+
+    function get_aggregate_color(d) {
+      percent = get_percent(d)
+      return get_color(percent);
+    }
+
+    function get_color(percent) {
       color = "red";
       if (percent > 0) {
         color = "green";
@@ -351,7 +371,7 @@ var realEstateViz = (function() {
     }
 
     function get_label_anchor(d) {
-      r = get_radius(d)
+      r = get_aggregate_radius(d)
       if (r > radius_limit) {
         return "middle";
       }
@@ -359,7 +379,7 @@ var realEstateViz = (function() {
     }
 
     function get_label_size(d) {
-      r = get_radius(d)
+      r = get_aggregate_radius(d)
       if (r > radius_limit) {
         return r/2 +2;
       }
@@ -367,7 +387,7 @@ var realEstateViz = (function() {
     }
 
     function get_label_color(d) {
-      r = get_radius(d)
+      r = get_aggregate_radius(d)
       if (r > radius_limit) {
         return "white";
       } 
@@ -375,7 +395,7 @@ var realEstateViz = (function() {
     }
 
     function get_label_position(d){
-      r = get_radius(d)
+      r = get_aggregate_radius(d)
       if (r > radius_limit) {
         return "translate(0 3)";
       }

@@ -5,49 +5,9 @@ html, body {
     font-family: helvetica;
 }
 
-h2 {
-	text-align: center;
-	margin-bottom: 0px;
-}
-
-.container {
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-flow: row wrap;
-    flex-flow: row wrap;
-}
-
-
-.sub-container {
-    padding-right: 1%;
-    padding-left: 1%;
-    width: 98%;
-}
-
-@media (min-width: 800px) {
-    .sub-container {
-        padding-right: 1%;
-        padding-left: 1%;
-        width: 48%;
-    }
-}
-
-.map {
-    min-height: 500px;
-}
-
-.graphs {
-    height: 800px;
-    padding-top: 1.5em;
-}
-
 #map {
 	height: 400px;
 	width: 100%;
-}
-
-.map-legend {
-    padding: 0 0 0 1.5em;
 }
 
 #map-legend .list-inline {
@@ -88,57 +48,4 @@ h2 {
 #map-legend li.figure {
     font-size: .75em;
     width: 22%;
-}
-
-/* for the line graph */
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-
-.x.axis path {
-  display: none;
-}
-
-.line {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 1.5px;
-}
-
-/* for the boxplot */
-.box line,
-.box rect,
-.box circle {
-  fill: steelblue;
-  stroke: #000;
-  stroke-width: 1px;
-}
-
-.box .center {
-  stroke-dasharray: 3,3;
-}
-
-.box .outlier {
-  fill: none;
-  stroke: #000;
-}
-
-.box .axis {
-  font: 12px sans-serif;
-}
- 
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
- 
-.box .x.axis path { 
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
 }
