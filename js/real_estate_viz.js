@@ -66,8 +66,8 @@ var realEstateViz = (function() {
         price_color = get_price_color_scale(aggregates_filtered);
 
     //build legend
-    var figures = d3.select("#figures");
-    var keys = figures.selectAll("li.figure")
+    var figures = d3.select("#map-legend ul.figures");
+    figures.selectAll("li.figure")
         .data(price_color.range())
         .enter()
         .append("li")
@@ -83,12 +83,12 @@ var realEstateViz = (function() {
         .attr("class", "figure")
         .html(last_val);
 
-    var colors = d3.select("#colors");
-    var keys = colors.selectAll("li.key")
+    var colors = d3.select("#map-legend ul.colors");
+    colors.selectAll("li.color")
       .data(price_color.range())
       .enter()
       .append("li")
-      .attr("class", "key")
+      .attr("class", "color")
       .style("background", String);
 
 
