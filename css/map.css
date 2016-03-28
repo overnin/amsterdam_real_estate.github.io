@@ -10,6 +10,11 @@ svg {
   font-size: 12px;
 }
 
+.area-header {
+  font-size: 14px;
+  text-decoration: underline;
+}
+
 #map {
 	height: 400px;
 	width: 100%;

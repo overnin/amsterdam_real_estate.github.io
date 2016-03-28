@@ -13,6 +13,7 @@
       <script src="js/lib/d3.js" charset="utf-8"></script>
       <script src="js/lib/queue.v1.min.js" charset="utf-8"></script>
       <script src="js/lib/colorbrewer.js" charset="utf-8"></script>
+      <script src="js/lib/d3plus.full.min.js" charset="utf-8"></script>
       <link rel="stylesheet" type="text/css" href="css/lib/colorbrewer.css"></link>
       <!--Leaflet / Mapbox 
       <script src='https://api.mapbox.com/mapbox.js/v2.3.0/mapbox.js'></script>
@@ -34,7 +35,7 @@
     <div class="row" style="height:100%">
       <div class="col-md-3">
         <h3>Real estate price trend in the city of Amsterdam on the <a href="http://funda.nl">funda website</a>.</h3>
-        <br/><br/>
+        <br/>
         <p style="margin-bottom:0px">Price (euro / square meter) median per areas over Jan-Mar 2016</p>
         <div id="map-legend">
           <ul class="list-inline colors">
@@ -46,7 +47,7 @@
         <br/><br/>
         <p style="margin-bottom:0px">Price increase since 1 year per areas<p>
         <svg id="growth-legend" height="40"> 
-          <text x="45" y="23">Overall trend</text>
+          <text x="45" y="23" font-size="12" font-family="Helvetica">Overall trend</text>
         </svg>
       </div>
       <div class="col-md-9">

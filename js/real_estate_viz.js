@@ -108,7 +108,7 @@ var realEstateViz = (function() {
         .attr("fill", function() {return get_color(weighted_increase)});
       growth_legend
         .append("text")
-        .attr("transform", "translate(1 5)")
+        .attr("transform", "translate(1 3)")
         .attr("text-anchor", "middle")
         .attr("fill", "white")
         .attr("font-size", "10")
@@ -171,18 +171,22 @@ var realEstateViz = (function() {
       .style("visibility", "hidden")
       .style("pointer-event", "none")
 
-    var boxes = details
-      .append("rect")
+    details.append("rect")
       .style("fill", "white")
       .attr("x", "0")
       .attr("y", "-10")
-      .attr("height", "100")
-      .attr("width", "200")
+      .attr("height", "50")
+      .attr("width", "250");
+    details.append("polygon")
+      .attr("points", "-5,0 0,-10 0,10")
+      .style("fill", "white");
 
     var texts = details
       .append("text")
       .attr("x", "5")
-      .attr("y", "5")
+      .attr("y", "5");
+
+    texts.html(get_text);
 
     map.on("viewreset", reset);
     reset();   // require to finalize the viz set up
@@ -217,11 +221,9 @@ var realEstateViz = (function() {
         .attr("transform", get_label_position)
 
       details.attr("transform", function(d) {
-        x = map.latLngToLayerPoint(d.LatLng).x + 10;
-        y = map.latLngToLayerPoint(d.LatLng).y;
+        x = map.latLngToLayerPoint(d.LatLng).x + 6 + get_aggregate_radius(d);
+        y = map.latLngToLayerPoint(d.LatLng).y - 1;
         return "translate("+ x +" "+ y +")"})
-
-      texts.html(get_text);
     }
 
     function entering_area(d) {
@@ -331,12 +333,15 @@ var realEstateViz = (function() {
 
     function get_percent(d) {
       if (d["stats_per_month"][month_index]["price_square_meter_mean"] == null) {
-        return 0;
+        return null;
       }
       return precentage_increase(d["stats_per_month"][month_compare_index]["price_square_meter_mean"], d["stats_per_month"][month_index]["price_square_meter_mean"]);
     }
 
     function get_percent_rounded(percent) {
+      if (percent == null) {
+        return "";
+      }
       if (Math.abs(percent) >= .01) { 
         return NL.numberFormat("+%")(percent);
       }
@@ -403,9 +408,14 @@ var realEstateViz = (function() {
     }
 
     function get_text(d) {
-      detail = '<tspan x="3" style="text-decoration:underline;font-size:1.5em;">' +d["name"]+ '</tspan>'
+      detail = '<tspan x="3" class="area-header">' +d["name"]+ '</tspan>'
+      percent = get_percent(d);
+      if (percent == null) {
+        detail += '<tspan x="3" y="1.8em">no property sold</tspan>';
+        return detail;
+      }
+      
       detail += '<tspan x="3" y="1.8em">' + NL.numberFormat("$f")(d.stats_per_month[month_index].price_square_meter_mean) + ' m2</tspan>';
-      percent = precentage_increase(d.stats_per_month[month_compare_index].price_square_meter_mean, d.stats_per_month[month_index].price_square_meter_mean)
       if (percent > 0) {
         color = "green";
       } else {
@@ -413,7 +423,7 @@ var realEstateViz = (function() {
       }
       detail += '<tspan style="stroke:'+color+'">  ' + NL.numberFormat("+.2%")(percent) + '</tspan>';
 
-      detail += '<tspan x="3" y="3em">' + d.stats_per_month[month_index].sold_count + ' sold properties</tspan>';
+      detail += '<tspan x="3" y="3em">' + d.stats_per_month[month_index].sold_count + ' property sold</tspan>';
       percent = precentage_increase(d.stats_per_month[month_compare_index].sold_percent, d.stats_per_month[month_index].sold_percent)
       if (percent > 0) {
         color = "green";
