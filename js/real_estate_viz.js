@@ -111,7 +111,7 @@ var realEstateViz = (function() {
         .attr("transform", "translate(1 5)")
         .attr("text-anchor", "middle")
         .attr("fill", "white")
-        .attr("font-size", "12")
+        .attr("font-size", "10")
         .text(function() {return get_percent_rounded(weighted_increase);})
 
     var svg = d3.select(map.getPanes().overlayPane)

@@ -5,6 +5,11 @@ html, body {
     font-family: helvetica;
 }
 
+svg {
+  font-family: "helvetica", "arial", sans-serif;
+  font-size: 12px;
+}
+
 #map {
 	height: 400px;
 	width: 100%;
