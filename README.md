@@ -1,52 +1,36 @@
 ==Summary== 
-in no more than 4 sentences, briefly introduce your data visualization and add any context that can help readers understand it
 
-Since a year, the prices have strongly increase within the central area with 2 digits. 
-Few upcomming areas are expriencing an even stronger increase at the edge of the central area with more than 20%. 
-Altough most of the areas at the rim of the city are increasing at a lower pace, few are not 
+Amsterdam city real estate is experiencing a boom since a year with areas having above 20% growth in price per square meter. The center areas with prices greater than €4200 have a 2 digit increase, it's also where most of the transactions append. Still the strongest growth is for a second circle of areas with prices between €3100 and €4200. However a third circle, furtherest away with prices below €3100 has a slower on digit growth and even depreciation for one area. 
+
 
 ==Design==
-explain any design choices you made including changes to the visualization after collecting feedback
 
-The initial design was to provide an exploratory tool to explore real estate opportunities the city.
-To facilitate the exploration the screen was devided in 4 spaces, the map was one of them. 
-By zooming or moving the map, the 3 other spaces were recalculated to provide price evolution or most active agent in the visible area.
-A statistical analysis of past offers was contextualizing the price of the offers.
-This initial disgn was very interactive with the map as a control.
+The initial design was an viewer driven exploratory tool of the real estate of the city. The tool aimed at comparing past prices (up to 1 year) with the current property on the market. The data were scraped from the funda website which is the most prominent real estate website in the Netherlands. To facilitate the exploration the screen was divided in 4 spaces, a map was one of them. By zooming or moving the map around, the 3 other space add graphs which were dynamically adjusted to the current map position and zoom so that the viewer could have the local price trend or the most active agent in the visible area. Also on the map, a statistical analysis layer done by krigging was added to compare the current prices with past transactions. Lot of feedback was provided by a real estate investor to simplify the graphs.
 
-After getting the comment from Udacity coach, i reconsider the approach to deliver a exploratory visualization.
-To simplify the message, the current offer were dumped and the viz only work on the evolution of the price per square meter. 
-The city areas are devided on a 3 price scale. 
-On top are displayed the evolution of this price since 1 year.
+After getting the comment from Udacity coach, i realised the author driven narrative was not addressed. Therefor the visualization was simplified down to simple map of the prices per square meters and a trend component was added through an animation over the quarterly evolution of prices and the volume of transactions. The animation wasn't successful in conveying a message as the average per areas didn't produce any significant change on the map. Also volume of transaction didn't appeal to different viewers. The animation would have made more sense on a longer timeline with yearly evolution but the data were not available. So instead of the animation, i rather dump the animation aspect to a more interactive component. The volume of transaction was no more displayed directly on the map but only when the viewer would explore each area. The final map only display the price per square meters with it's evolution since 1 year. 
 
-From a pure technical point of view, multiple technics were used. First a d3 map was created from openstreetmap osm data but the level of detail was too high to be quickly displayed in JS (amsterdam has too many canals).
-In a second step, Google map was used, it greately enhance the visual aesthetic but has strong limitations. 1) the map was very slow to display as generate on google server 2) the graphic capabilites integrate with d3 were very limited.
-Finaly though the Mapbox, the best result was achieve in term of peformance and integration with d3.
+From a technical point of view, multiple mapping technologies were used. First a full d3 map was created from Open Street Map's raw data but the level of details was too high to be quickly displayed in Javascript, indeed Amsterdam has too many canals. Secondly Google map was used, it greatly enhance the visual aesthetic but had strong limitations: 1) the map was very slow to display as generate on google server; 2) the integration with d3 were very limited. Thirdly Mapbox achieved the best result in term of performance and integration with d3 which allowed to craft a map exactly as i wanted.
 
+==Feedbacks==
 
-==Feedback==
-include all feedback you received from others on your visualization from the first sketch to the final visualization
-- add sketch pic -
-- add R map scaterplot -
-
-===Feedback v1.0==
-from PL:
-- too much detail on the maps
-- map is missing a scale
-- instead of plotting every poperty sold, cluster them
-- provide a zoom ability on "quartier": historic, business, adminstrative... 
-- only have 3 categories: low, medium and high
+===Feedbacks for v1.0 - Viewer Driven Visualization==
+From Pierre:
+- there are too much detail on the maps
+- the map is missing a scale
+- instead of plotting every property sold, cluster them
+- provide a zoom ability on areas. 
+- keep only have 3 price categories: low, medium and high
 - once zoomed recalibrate the 3 categories based on the 3 area
-- agency list only make sense coupled with time periode
-- do not plot incomplete month especially for # of transactions
+- the agency list only make sense coupled with time period
+- do not plot incomplete month especially for volume of transactions
 - x axis of time is confusing as the 2014 is missing.
-- only provide a drop down (or a top 3 for the agencies)
-- graphs should have their y axis scale start at 0
-- boxplot is just too complicate, rahter have the categories of room on a multiline graphe
-- which insight for the future can it provides
+- only provide a drop down for agency (or a top 3 for the agencies)
+- the graphs should have their y axis scale start at 0
+- the boxplot is just too complicate, rahter have the categories of room on a multiline graphes
+- which insight for the future can it provides?
 - some users also like table, can we mix graphs and table? for which data?
 
-from JW:
+From Jan:
 - You might want to limit the real estate agent list to the top 20. If people want to see more, they could click on “more”. Otherwise it becomes such a long list
 - If that info is available, you might want to add a search filter in the real estate list on agents per price / m2, agents per geographical areas and Nr. Of transactions per year or month
 - For the transaction and price per m2 graph, you might want to show all months. This would make it a bit more comprehensive. I would also give the graphs a clear title.
@@ -54,16 +38,14 @@ from JW:
 - I would make the graphs in general a bit more visual
 - I like the map with the points. This confirms my thoughts about expensive and cheap areas in Amsterdam
 
-==Feedback v2.2==
-from Mark (low bandwidth connection)
-- long time to load
-- need tooltip on the graphs
-- remove/simplify the 
+==Feedbacks for v2: Still a Viewer Driven==
 
-From Carl (Udacity coach):
-- the viz is only exploratory but not explanatory, the work could be integrate in a martini glass viz
+From Mark 
+- it's taking a long long time to load (low bandwidth connection)
+- it needs tooltip on the graphs
+- remove/simplify the graph as they contain too much information
 
-From PL:
+From Pierre:
 - the price scale should be static and not evolved with zooming
 - the areas of amsterdam should be named and represented like "old center, north, ..."
 - the area price should appear directly (no need of over)
@@ -75,44 +57,30 @@ From PL:
 - the stack bar chart is use less, too dificult to read
 - the list of agencies should allow to 1) see which one is theirs 2) allow to move to their website
 - the dots of properties should list 1) total price 2) square meters 3) rooms 4) link to the ad
-- 
 
-==v3.0==
-Changes:
-- switch from google map to mapbox
-- remove the krigging layer
-- identify amsterdam district border
-- use bubbles to visualize the number of transaction
+From Carl (Udacity coach):
+- the viz is only exploratory (viewer driven) but not explanatory (author driven), the work could be integrated in a martini glass visualisation
+- the map is showing too many point, one should rather have a clusters to illustrate trends.
 
-from Thomas:
-- showing the number of transaction is not relevant, one shoud rather focus price evolution
 
-==v3.1==
-Changes:
-- visualize price per square meter and district 
+===Feedback for v3.0: Author Driven Animation===
+
+from Thomas & Simon:
+- the animation of the quarterly evolution is not relevant as the color on the maps are not changing at all.
+- showing the number of transaction is not relevant, one should rather focus price evolution
+
+
+==Feedback of v3.1: Author Driven Interactive==
+
+From Simon: 
+- the map is clear
+- it's good to have the volume of transaction in the tooltip
+- the administrative areas are quite wide and so providing an average on very different zones especially in the north of the city. 
 
 
 ==Resources==
-list any sources you consulted to create your visualization
-1) google map API
-2) http://bl.ocks.org/ for all types of graphs (line, boxplot, bar chart, ...)
-3) various JS tricks online, see in each file for detailed references: object-watch.js, maplabel-compiled.js, label.js
-4) openstreetdata for initial attempt to build a map in d3 (abandoned due to difficulties in using low level geoData)
-5) amsterdam district areas  http://maps.amsterdam.nl/open_geodata/
-
-==TODO==
-3) About the show the Kriging evolution
-4) Graph tooltip is necessary
-5) be able to show agencies property highli on the map
-6) clike on the map point to see the link to it
-7) about page to indicate
-    - origin of the data
-    - preprocess on the data
-8) fix the legend of the bar stack trace (5+ rooms and )
-9) uniforme x axis of both graphs
-10) decimal on scale, + reduce number of ticks
-11) issue of zindex between properties and areas
-
-==Done==
-1) Compute a Kriging with only sold properties
-2) Kriging layer displayed should be indicate on the viz,
+1) Funda website http://www.funda.nl/
+2) Scrapping with Scrapy http://scrapy.org/
+3) For all types of graphs (line, boxplot, bar chart, ...) http://bl.ocks.org/ 
+4) Integration of d3 and Mapbox https://bost.ocks.org/mike/leaflet/ 
+5) Amsterdam district areas http://maps.amsterdam.nl/open_geodata/
