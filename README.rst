@@ -13,6 +13,8 @@ After getting the comment from Udacity coach, i realised the author driven narra
 
 From a technical point of view, multiple mapping technologies were used. First a full d3 map was created from Open Street Map's raw data but the level of details was too high to be quickly displayed in Javascript, indeed Amsterdam has too many canals. Secondly Google map was used, it greatly enhance the visual aesthetic but had strong limitations: 1) the map was very slow to display as generate on google server; 2) the integration with d3 were very limited. Thirdly Mapbox achieved the best result in term of performance and integration with d3 which allowed to craft a map exactly as i wanted.
 
+From a data pipeline point of view, the data were scrapped from the Funda website and stored on a Mongodb instance. The data was cleaned, formatted and feature computed with Python scripts(Panda). Then each property was geocoded with the Google Map API. Finally the aggregated dataset was computed with a mixture of Mongodb queries and Python scripting.
+
 Feedbacks
 =========
 
@@ -100,3 +102,4 @@ Resources
 3. For all types of graphs (line, boxplot, bar chart, ...) http://bl.ocks.org/ 
 4. Integration of d3 and Mapbox https://bost.ocks.org/mike/leaflet/ 
 5. Amsterdam district areas http://maps.amsterdam.nl/open_geodata/
+6. Google Map Geocoding API https://developers.google.com/maps/documentation/geocoding/intro

@@ -25,7 +25,7 @@ var realEstateViz = (function() {
   function init() {
     resize();
     queue()
-      .defer(d3.json, "json/amsterdam_admin_level_3_aggregate.json")
+      .defer(d3.json, "data/amsterdam_aggregated.json")
       .await(build_viz);
   }
 
